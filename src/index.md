@@ -2,7 +2,7 @@
 title: Toronto Pearson Airport — Flight Activity
 ---
 
-# ✈ Toronto Pearson Airport — Flight Activity
+# ✈ Toronto Pearson International Airport — Flight Activity
 
 Live and upcoming flights for the next 24 hours (departures and arrivals).  
 Data sourced from [AviationStack](https://aviationstack.com/).

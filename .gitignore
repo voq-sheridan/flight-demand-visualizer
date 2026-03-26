@@ -3,7 +3,7 @@ node_modules/
 
 # Observable Framework build output
 dist/
-.observablehq/cache/
+**/.observablehq/cache/
 
 # Environment variables
 .env

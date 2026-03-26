@@ -1,0 +1,13 @@
+# Node dependencies
+node_modules/
+
+# Observable Framework build output
+dist/
+**/.observablehq/cache/
+
+# Environment variables
+.env
+
+# OS artifacts
+.DS_Store
+Thumbs.db

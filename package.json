@@ -1,0 +1,15 @@
+{
+  "name": "flight-demand-visualizer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "observable preview",
+    "build": "observable build",
+    "deploy": "observable deploy",
+    "clean": "observable clean"
+  },
+  "dependencies": {
+    "@observablehq/framework": "^1.12.0"
+  }
+}

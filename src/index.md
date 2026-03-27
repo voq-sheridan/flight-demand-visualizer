@@ -180,9 +180,26 @@ const data = await FileAttachment("data/flights.json").json();
 ```js
 // Render live summary, busyness chart and auto-refresh (10 minutes)
 // Import d3 in a way that's tolerant of module shapes (some CDNs export as default)
-const _d3mod = await import("https://cdn.jsdelivr.net/npm/d3@7?module");
-const _d3 = _d3mod.default ?? _d3mod;
-const {select, scaleBand, scaleLinear, max, axisBottom, axisLeft, format} = _d3;
+const _d3mod = await import("https://cdn.jsdelivr.net/npm/d3@7?module").catch(e=>{ console.warn('d3 import failed', e); return null; });
+const _d3 = (_d3mod && (_d3mod.default ?? _d3mod)) ?? (typeof window !== 'undefined' ? window.d3 : null);
+// Debug: print keys so we can see the module shape in the browser console if something is wrong
+console.debug('d3 runtime keys:', _d3 ? Object.keys(_d3) : _d3);
+
+const get = (name) => {
+  const fn = _d3 ? (_d3[name] ?? (typeof window !== 'undefined' && window.d3 ? window.d3[name] : undefined)) : undefined;
+  if (typeof fn !== 'function') {
+    console.warn(`d3.${name} is not available; available keys:`, _d3 ? Object.keys(_d3) : null);
+  }
+  return fn;
+};
+
+const select = get('select');
+const scaleBand = get('scaleBand');
+const scaleLinear = get('scaleLinear');
+const max = get('max');
+const axisBottom = get('axisBottom');
+const axisLeft = get('axisLeft');
+const format = get('format');
 
 // Helper to safely parse times in Toronto timezone context
 function toLocalDate(iso) {

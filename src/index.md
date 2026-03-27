@@ -223,13 +223,32 @@ function buildUI() {
   title.textContent = 'Flight volume by hour — next 24 hours';
   const sub = document.createElement('div');
   sub.className = 'chart-sub';
-  sub.textContent = 'Grouped by departures and arrivals. Bars colored by overall busyness (low, moderate, high).';
+  sub.textContent = 'Separate hourly views for departures and arrivals. Bars colored by overall busyness (low, moderate, high).';
 
-  // SVG container
-  const svgContainer = document.createElement('div');
-  svgContainer.style.width = '100%';
-  svgContainer.style.overflow = 'hidden';
-  const svg = d3.select(svgContainer).append('svg');
+  // SVG containers for departures and arrivals
+  const svgDepContainer = document.createElement('div');
+  svgDepContainer.style.width = '100%';
+  svgDepContainer.style.overflow = 'hidden';
+  svgDepContainer.style.marginBottom = '0.75rem';
+
+  const depLabel = document.createElement('div');
+  depLabel.className = 'chart-sub';
+  depLabel.style.marginBottom = '0.1rem';
+  depLabel.textContent = 'Departures by hour';
+
+  const svgDep = d3.select(svgDepContainer).append('svg');
+
+  const svgArrContainer = document.createElement('div');
+  svgArrContainer.style.width = '100%';
+  svgArrContainer.style.overflow = 'hidden';
+
+  const arrLabel = document.createElement('div');
+  arrLabel.className = 'chart-sub';
+  arrLabel.style.marginTop = '0.4rem';
+  arrLabel.style.marginBottom = '0.1rem';
+  arrLabel.textContent = 'Arrivals by hour';
+
+  const svgArr = d3.select(svgArrContainer).append('svg');
 
   // Busyness legend
   const busLegend = document.createElement('div');
@@ -240,13 +259,16 @@ function buildUI() {
 
   chartCard.appendChild(title);
   chartCard.appendChild(sub);
-  chartCard.appendChild(svgContainer);
+  chartCard.appendChild(depLabel);
+  chartCard.appendChild(svgDepContainer);
+  chartCard.appendChild(arrLabel);
+  chartCard.appendChild(svgArrContainer);
   chartCard.appendChild(busLegend);
 
   wrapper.appendChild(summaryPanel);
   wrapper.appendChild(chartCard);
 
-  return {wrapper, metrics, svg, svgContainer};
+  return {wrapper, metrics, svgDep, svgArr, svgDepContainer, svgArrContainer};
 }
 
 function createMetricCard(label, num, variantClass) {
@@ -291,7 +313,7 @@ function colorByBusyness(total, tertiles) {
   return '#fecaca'; // high
 }
 
-function drawChart(svg, svgContainer, bins) {
+function drawChart(svg, svgContainer, bins, key, yMax) {
   const margin = {top: 18, right: 12, bottom: 34, left: 36};
   const width = svgContainer.clientWidth || 800;
   const height = 260;
@@ -302,7 +324,8 @@ function drawChart(svg, svgContainer, bins) {
   const h = height - margin.top - margin.bottom;
 
   const x0 = d3.scaleBand().domain(bins.map(d=>d.label)).range([0,w]).paddingInner(0.15);
-  const y = d3.scaleLinear().domain([0, d3.max(bins, d=>Math.max(d.departures,d.arrivals)) || 1]).nice().range([h,0]);
+  const domainMax = yMax || d3.max(bins, d=>Math.max(d.departures,d.arrivals)) || 1;
+  const y = d3.scaleLinear().domain([0, domainMax]).nice().range([h,0]);
 
   // compute tertiles for busyness across totals
   const totals = bins.map(d=>d.total).sort((a,b)=>a-b);
@@ -310,30 +333,20 @@ function drawChart(svg, svgContainer, bins) {
   const t2 = totals[Math.floor((totals.length*2)/3)] ?? 0;
 
   const bandWidth = x0.bandwidth();
-  const barWidth = bandWidth * 0.38; // leave a small gap between dep/arr
-  const centerOffset = bandWidth / 2;
-  const gap = bandWidth * 0.08;
+  const barWidth = bandWidth * 0.6;
 
-  // Departures (left bar in each hour)
-  g.selectAll('.bar-dep')
+  // Single series: either departures or arrivals, depending on key
+  g.selectAll('.bar')
     .data(bins)
     .join('rect')
-      .attr('class', 'bar-dep')
-      .attr('x', d => x0(d.label) + centerOffset - barWidth - gap/2)
-      .attr('y', d => y(d.departures))
+      .attr('class', 'bar')
+      .attr('x', d => x0(d.label) + (bandWidth - barWidth) / 2)
+      .attr('y', d => y(key === 'departures' ? d.departures : d.arrivals))
       .attr('width', barWidth)
-      .attr('height', d => Math.max(0, h - y(d.departures)))
-      .attr('fill', d => colorByBusyness(d.total, [t1,t2]));
-
-  // Arrivals (right bar in each hour)
-  g.selectAll('.bar-arr')
-    .data(bins)
-    .join('rect')
-      .attr('class', 'bar-arr')
-      .attr('x', d => x0(d.label) + centerOffset + gap/2)
-      .attr('y', d => y(d.arrivals))
-      .attr('width', barWidth)
-      .attr('height', d => Math.max(0, h - y(d.arrivals)))
+      .attr('height', d => {
+        const v = key === 'departures' ? d.departures : d.arrivals;
+        return Math.max(0, h - y(v));
+      })
       .attr('fill', d => colorByBusyness(d.total, [t1,t2]));
 
   // axes
@@ -341,17 +354,10 @@ function drawChart(svg, svgContainer, bins) {
   const yAxis = d3.axisLeft(y).ticks(4).tickFormat(d3.format('d'));
   g.append('g').attr('transform', `translate(0,${h})`).call(xAxis).selectAll('text').style('font-size','11px');
   g.append('g').call(yAxis).selectAll('text').style('font-size','11px');
-
-  // little color markers for dep/arr
-  const legend = svg.append('g').attr('transform', `translate(${width - 160},8)`);
-  legend.append('rect').attr('width',12).attr('height',12).attr('fill','#dbeafe');
-  legend.append('text').attr('x',16).attr('y',10).text('Departures').style('font-size','11px');
-  legend.append('rect').attr('x',0).attr('y',16).attr('width',12).attr('height',12).attr('fill','#fce7f3');
-  legend.append('text').attr('x',16).attr('y',26).text('Arrivals').style('font-size','11px');
 }
 
 // Build UI and attach
-const {wrapper, metrics, svg, svgContainer} = buildUI();
+const {wrapper, metrics, svgDep, svgArr, svgDepContainer, svgArrContainer} = buildUI();
 display(wrapper);
 
 // status & table area will follow below; render chart and metrics now
@@ -365,9 +371,11 @@ async function renderFromSource(srcData) {
   metrics.delayed.set(totalDelayed);
   metrics.scheduled.set(totalScheduled);
 
-  // bins and chart
+  // bins and charts
   const bins = computeHourlyBins(flights);
-  drawChart(svg, svgContainer, bins);
+  const yMax = d3.max(bins, d => Math.max(d.departures, d.arrivals)) || 1;
+  drawChart(svgDep, svgDepContainer, bins, 'departures', yMax);
+  drawChart(svgArr, svgArrContainer, bins, 'arrivals', yMax);
 
   // show/update a small last-updated row beneath the chart card
   if (srcData.fetchedAt) {

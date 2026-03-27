@@ -10,44 +10,59 @@
 <link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.b050d634.css">
 <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
 <link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.b050d634.css">
-<link rel="modulepreload" href="./_observablehq/client.3942b133.js">
+<link rel="modulepreload" href="./_observablehq/client.50a456f6.js">
 <link rel="modulepreload" href="./_observablehq/runtime.607a8173.js">
-<link rel="modulepreload" href="./_observablehq/stdlib.318537f4.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.277aeab8.js">
+<link rel="modulepreload" href="./_npm/d3@7.9.0/66d82917.js">
+<link rel="modulepreload" href="./_npm/d3-array@3.2.4/e93ca09f.js">
+<link rel="modulepreload" href="./_npm/d3-axis@3.0.0/0f2de24d.js">
+<link rel="modulepreload" href="./_npm/d3-brush@3.0.0/65eb105b.js">
+<link rel="modulepreload" href="./_npm/d3-chord@3.0.1/7ef8fb2e.js">
+<link rel="modulepreload" href="./_npm/d3-color@3.1.0/aeb57b94.js">
+<link rel="modulepreload" href="./_npm/d3-contour@4.0.2/1d2aed74.js">
+<link rel="modulepreload" href="./_npm/d3-delaunay@6.0.4/87adea64.js">
+<link rel="modulepreload" href="./_npm/d3-dispatch@3.0.1/9ba9c7f3.js">
+<link rel="modulepreload" href="./_npm/d3-drag@3.0.0/4202580c.js">
+<link rel="modulepreload" href="./_npm/d3-dsv@3.0.1/9cffc2bd.js">
+<link rel="modulepreload" href="./_npm/d3-ease@3.0.1/cdd7e898.js">
+<link rel="modulepreload" href="./_npm/d3-fetch@3.0.1/b4e2ad9a.js">
+<link rel="modulepreload" href="./_npm/d3-force@3.0.0/5e804d15.js">
+<link rel="modulepreload" href="./_npm/d3-format@3.1.2/3785bf2d.js">
+<link rel="modulepreload" href="./_npm/d3-geo@3.1.1/40599fb3.js">
+<link rel="modulepreload" href="./_npm/d3-hierarchy@3.1.2/e49e792c.js">
+<link rel="modulepreload" href="./_npm/d3-interpolate@3.0.1/8d1e5425.js">
+<link rel="modulepreload" href="./_npm/d3-path@3.1.0/20d3f133.js">
+<link rel="modulepreload" href="./_npm/d3-polygon@3.0.1/7553081f.js">
+<link rel="modulepreload" href="./_npm/d3-quadtree@3.0.1/0dfd751c.js">
+<link rel="modulepreload" href="./_npm/d3-random@3.0.1/3c90ee06.js">
+<link rel="modulepreload" href="./_npm/d3-scale@4.0.2/720b7f0a.js">
+<link rel="modulepreload" href="./_npm/d3-scale-chromatic@3.1.0/ba24c2e7.js">
+<link rel="modulepreload" href="./_npm/d3-selection@3.0.0/4d94e5b7.js">
+<link rel="modulepreload" href="./_npm/d3-shape@3.2.0/6d3a6726.js">
+<link rel="modulepreload" href="./_npm/d3-time@3.1.0/9f03c579.js">
+<link rel="modulepreload" href="./_npm/d3-time-format@4.1.0/07c9626f.js">
+<link rel="modulepreload" href="./_npm/d3-timer@3.0.1/b58a267d.js">
+<link rel="modulepreload" href="./_npm/d3-transition@3.0.1/004da2ac.js">
+<link rel="modulepreload" href="./_npm/d3-zoom@3.0.0/b5786b3f.js">
+<link rel="modulepreload" href="./_npm/internmap@2.0.3/e08981d9.js">
+<link rel="modulepreload" href="./_npm/delaunator@5.1.0/d4ec0aa1.js">
+<link rel="modulepreload" href="./_npm/robust-predicates@3.0.3/42820bfa.js">
 <script type="module">
 
-import {define} from "./_observablehq/client.3942b133.js";
-import {registerFile} from "./_observablehq/stdlib.318537f4.js";
+import {define} from "./_observablehq/client.50a456f6.js";
+import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.d49608cd.json","lastModified":1774570888911,"size":13781});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.232bb501.json","lastModified":1774571118054,"size":16596});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "1fcc0107", inputs: ["display","data"], outputs: ["_d3mod","_d3","get","select","scaleBand","scaleLinear","max","axisBottom","axisLeft","format","toLocalDate","buildUI","createMetricCard","computeHourlyBins","colorByBusyness","drawChart","wrapper","metrics","svg","svgContainer","renderFromSource","REFRESH_MS","refreshTimer"], body: async (display,data) => {
+define({id: "6464a19e", inputs: ["display","data"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","computeHourlyBins","colorByBusyness","drawChart","wrapper","metrics","svg","svgContainer","renderFromSource","REFRESH_MS","refreshTimer"], body: async (display,data) => {
+const d3 = await import("./_npm/d3@7.9.0/66d82917.js");
 // Render live summary, busyness chart and auto-refresh (10 minutes)
-// Import d3 in a way that's tolerant of module shapes (some CDNs export as default)
-const _d3mod = await import("https://cdn.jsdelivr.net/npm/d3@7?module").catch(e=>{ console.warn('d3 import failed', e); return null; });
-const _d3 = (_d3mod && (_d3mod.default ?? _d3mod)) ?? (typeof window !== 'undefined' ? window.d3 : null);
-// Debug: print keys so we can see the module shape in the browser console if something is wrong
-console.debug('d3 runtime keys:', _d3 ? Object.keys(_d3) : _d3);
-
-const get = (name) => {
-  const fn = _d3 ? (_d3[name] ?? (typeof window !== 'undefined' && window.d3 ? window.d3[name] : undefined)) : undefined;
-  if (typeof fn !== 'function') {
-    console.warn(`d3.${name} is not available; available keys:`, _d3 ? Object.keys(_d3) : null);
-  }
-  return fn;
-};
-
-const select = get('select');
-const scaleBand = get('scaleBand');
-const scaleLinear = get('scaleLinear');
-const max = get('max');
-const axisBottom = get('axisBottom');
-const axisLeft = get('axisLeft');
-const format = get('format');
+// Use Observable Framework's npm import syntax so D3 is bundled correctly.
 
 // Helper to safely parse times in Toronto timezone context
 function toLocalDate(iso) {
@@ -87,7 +102,7 @@ function buildUI() {
   const svgContainer = document.createElement('div');
   svgContainer.style.width = '100%';
   svgContainer.style.overflow = 'hidden';
-  const svg = select(svgContainer).append('svg');
+  const svg = d3.select(svgContainer).append('svg');
 
   // Busyness legend
   const busLegend = document.createElement('div');
@@ -158,9 +173,9 @@ function drawChart(svg, svgContainer, bins) {
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
 
-  const x0 = scaleBand().domain(bins.map(d=>d.label)).range([0,w]).paddingInner(0.15);
-  const x1 = scaleBand().domain(['departures','arrivals']).range([0,x0.bandwidth()]).padding(0.05);
-  const y = scaleLinear().domain([0, max(bins, d=>Math.max(d.departures,d.arrivals)) || 1]).nice().range([h,0]);
+  const x0 = d3.scaleBand().domain(bins.map(d=>d.label)).range([0,w]).paddingInner(0.15);
+  const x1 = d3.scaleBand().domain(['departures','arrivals']).range([0,x0.bandwidth()]).padding(0.05);
+  const y = d3.scaleLinear().domain([0, d3.max(bins, d=>Math.max(d.departures,d.arrivals)) || 1]).nice().range([h,0]);
 
   // compute tertiles for busyness across totals
   const totals = bins.map(d=>d.total).sort((a,b)=>a-b);
@@ -181,8 +196,8 @@ function drawChart(svg, svgContainer, bins) {
     .attr('stroke', '#00000000');
 
   // axes
-  const xAxis = axisBottom(x0).tickValues(bins.filter((_,i)=> i%3===0).map(d=>d.label));
-  const yAxis = axisLeft(y).ticks(4).tickFormat(format('d'));
+  const xAxis = d3.axisBottom(x0).tickValues(bins.filter((_,i)=> i%3===0).map(d=>d.label));
+  const yAxis = d3.axisLeft(y).ticks(4).tickFormat(d3.format('d'));
   g.append('g').attr('transform', `translate(0,${h})`).call(xAxis).selectAll('text').style('font-size','11px');
   g.append('g').call(yAxis).selectAll('text').style('font-size','11px');
 
@@ -253,7 +268,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', beforeUnload);
 }
 
-return {_d3mod,_d3,get,select,scaleBand,scaleLinear,max,axisBottom,axisLeft,format,toLocalDate,buildUI,createMetricCard,computeHourlyBins,colorByBusyness,drawChart,wrapper,metrics,svg,svgContainer,renderFromSource,REFRESH_MS,refreshTimer};
+return {d3,toLocalDate,buildUI,createMetricCard,computeHourlyBins,colorByBusyness,drawChart,wrapper,metrics,svg,svgContainer,renderFromSource,REFRESH_MS,refreshTimer};
 }});
 
 define({id: "c9eddbf6", inputs: ["data","display"], body: (data,display) => {
@@ -534,13 +549,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block"><!--:1fcc0107:--></div>
+<div class="observablehq observablehq--block"><!--:6464a19e:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T00:21:26">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T00:25:13">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

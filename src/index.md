@@ -292,16 +292,15 @@ function buildUI() {
     .append('svg')
     .attr('class', 'heatmap-svg');
 
-  // Heatmap legend (Less -> More)
+  // Heatmap legend (flight-count thresholds)
   const heatmapLegend = document.createElement('div');
   heatmapLegend.className = 'heatmap-legend';
   heatmapLegend.innerHTML = `
     <span>Less</span>
-    <span class="heatmap-swatch" style="background:#f5f5f5"></span>
-    <span class="heatmap-swatch" style="background:#fecaca"></span>
-    <span class="heatmap-swatch" style="background:#f87171"></span>
-    <span class="heatmap-swatch" style="background:#ef4444"></span>
-    <span class="heatmap-swatch" style="background:#b91c1c"></span>
+    <span class="heatmap-swatch" style="background:#f5f5f5" title="0 flights"></span>
+    <span class="heatmap-swatch" style="background:#fee0d2" title="1-10 flights"></span>
+    <span class="heatmap-swatch" style="background:#fc9272" title="11-20 flights"></span>
+    <span class="heatmap-swatch" style="background:#de2d26" title="21+ flights"></span>
     <span>More</span>`;
 
   // Tooltip for bars
@@ -440,7 +439,12 @@ function buildBinsForDate(flights, dateKey) {
   return bins;
 }
 
-const HEATMAP_COLORS = ['#f5f5f5', '#fecaca', '#f87171', '#ef4444', '#b91c1c'];
+function heatmapColor(total) {
+  if (total === 0) return '#f5f5f5';
+  if (total <= 10) return '#fee0d2';
+  if (total <= 20) return '#fc9272';
+  return '#de2d26';
+}
 
 function parseDateKey(dateKey) {
   const [y, m, d] = dateKey.split('-').map(Number);
@@ -549,11 +553,6 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   const currentHour = torontoHour(new Date());
   const todayRowIndex = dateKeys.indexOf(todayKey);
 
-  const color = d3
-    .scaleQuantize()
-    .domain([0, Math.max(1, sharedMax)])
-    .range(HEATMAP_COLORS);
-
   const rowIndexByKey = new Map(dateKeys.map((d, i) => [d, i]));
 
   g
@@ -612,7 +611,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('height', cellSize)
     .attr('rx', 4)
     .attr('ry', 4)
-    .attr('fill', (d) => color(d.total))
+  .attr('fill', (d) => heatmapColor(d.total))
     .style('cursor', 'pointer')
     .on('mousemove', (event, d) => {
       const dateObj = parseDateKey(d.dateKey);

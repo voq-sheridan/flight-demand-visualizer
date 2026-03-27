@@ -376,7 +376,16 @@ display(wrapper);
 
 // Time helpers in Toronto timezone
 function torontoDateKey(date) {
-  return date.toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Toronto',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const year = parts.find((p) => p.type === 'year')?.value;
+  const month = parts.find((p) => p.type === 'month')?.value;
+  const day = parts.find((p) => p.type === 'day')?.value;
+  return `${year}-${month}-${day}`;
 }
 
 function torontoHour(date) {
@@ -433,20 +442,26 @@ function buildBinsForDate(flights, dateKey) {
 
 const HEATMAP_COLORS = ['#f5f5f5', '#fecaca', '#f87171', '#ef4444', '#b91c1c'];
 
-function torontoNowAsDate() {
-  return new Date(new Date().toLocaleString('en-CA', { timeZone: 'America/Toronto' }));
+function parseDateKey(dateKey) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+}
+
+function shiftDateKey(dateKey, offsetDays) {
+  const dt = parseDateKey(dateKey);
+  dt.setUTCDate(dt.getUTCDate() + offsetDays);
+  const y = dt.getUTCFullYear();
+  const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(dt.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function getThreeDayKeys() {
-  const nowToronto = torontoNowAsDate();
-  const yesterday = new Date(nowToronto);
-  yesterday.setDate(nowToronto.getDate() - 1);
-  const tomorrow = new Date(nowToronto);
-  tomorrow.setDate(nowToronto.getDate() + 1);
+  const todayKey = torontoDateKey(new Date());
   return [
-    torontoDateKey(yesterday),
-    torontoDateKey(nowToronto),
-    torontoDateKey(tomorrow)
+    shiftDateKey(todayKey, -1),
+    todayKey,
+    shiftDateKey(todayKey, 1)
   ];
 }
 
@@ -530,9 +545,8 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   const g = svg.append('g');
   const tooltipSel = d3.select(tooltip);
 
-  const nowToronto = torontoNowAsDate();
-  const todayKey = torontoDateKey(nowToronto);
-  const currentHour = torontoHour(nowToronto);
+  const todayKey = torontoDateKey(new Date());
+  const currentHour = torontoHour(new Date());
   const todayRowIndex = dateKeys.indexOf(todayKey);
 
   const color = d3
@@ -562,9 +576,9 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('text-anchor', 'end')
     .style('font-weight', (_, i) => (i === 1 ? '700' : '400'))
     .text((d) => {
-      const dateObj = new Date(`${d}T00:00:00`);
+      const dateObj = parseDateKey(d);
       return dateObj.toLocaleDateString('en-CA', {
-        timeZone: 'America/Toronto',
+        timeZone: 'UTC',
         weekday: 'short',
         month: 'short',
         day: 'numeric'
@@ -601,9 +615,9 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('fill', (d) => color(d.total))
     .style('cursor', 'pointer')
     .on('mousemove', (event, d) => {
-      const dateObj = new Date(`${d.dateKey}T00:00:00`);
+      const dateObj = parseDateKey(d.dateKey);
       const dateLabel = dateObj.toLocaleDateString('en-CA', {
-        timeZone: 'America/Toronto',
+        timeZone: 'UTC',
         weekday: 'long',
         year: 'numeric',
         month: 'short',

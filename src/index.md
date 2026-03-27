@@ -316,6 +316,26 @@ function createMetricCard(label, num, variantClass) {
   return {card, set: (v) => n.textContent = v};
 }
 
+// Build the dashboard UI once and attach it to the document
+const {
+  wrapper,
+  summaryPanel,
+  staffBanner,
+  metrics,
+  chartCard,
+  dateSelect,
+  statusSelect,
+  dateHeading,
+  svgDep,
+  svgArr,
+  svgDepContainer,
+  svgArrContainer,
+  tooltip,
+  tableContainer
+} = buildUI();
+
+display(wrapper);
+
 // Time helpers in Toronto timezone
 function torontoDateKey(date) {
   return date.toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });

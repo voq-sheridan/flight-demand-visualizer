@@ -235,7 +235,8 @@ function buildUI() {
   // SVG containers for departures and arrivals
   const svgDepContainer = document.createElement('div');
   svgDepContainer.style.width = '100%';
-  svgDepContainer.style.overflow = 'hidden';
+  svgDepContainer.style.overflowX = 'auto';
+  svgDepContainer.style.overflowY = 'visible';
   svgDepContainer.style.marginBottom = '0.75rem';
 
   const depLabel = document.createElement('div');
@@ -247,7 +248,8 @@ function buildUI() {
 
   const svgArrContainer = document.createElement('div');
   svgArrContainer.style.width = '100%';
-  svgArrContainer.style.overflow = 'hidden';
+  svgArrContainer.style.overflowX = 'auto';
+  svgArrContainer.style.overflowY = 'visible';
 
   const arrLabel = document.createElement('div');
   arrLabel.className = 'chart-sub';

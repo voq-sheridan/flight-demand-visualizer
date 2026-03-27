@@ -10,19 +10,736 @@
 <link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.b050d634.css">
 <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
 <link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.b050d634.css">
-<link rel="modulepreload" href="./_observablehq/client.3942b133.js">
+<link rel="modulepreload" href="./_observablehq/client.50a456f6.js">
 <link rel="modulepreload" href="./_observablehq/runtime.607a8173.js">
-<link rel="modulepreload" href="./_observablehq/stdlib.318537f4.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.277aeab8.js">
+<link rel="modulepreload" href="./_npm/d3@7.9.0/66d82917.js">
+<link rel="modulepreload" href="./_npm/d3-array@3.2.4/e93ca09f.js">
+<link rel="modulepreload" href="./_npm/d3-axis@3.0.0/0f2de24d.js">
+<link rel="modulepreload" href="./_npm/d3-brush@3.0.0/65eb105b.js">
+<link rel="modulepreload" href="./_npm/d3-chord@3.0.1/7ef8fb2e.js">
+<link rel="modulepreload" href="./_npm/d3-color@3.1.0/aeb57b94.js">
+<link rel="modulepreload" href="./_npm/d3-contour@4.0.2/1d2aed74.js">
+<link rel="modulepreload" href="./_npm/d3-delaunay@6.0.4/87adea64.js">
+<link rel="modulepreload" href="./_npm/d3-dispatch@3.0.1/9ba9c7f3.js">
+<link rel="modulepreload" href="./_npm/d3-drag@3.0.0/4202580c.js">
+<link rel="modulepreload" href="./_npm/d3-dsv@3.0.1/9cffc2bd.js">
+<link rel="modulepreload" href="./_npm/d3-ease@3.0.1/cdd7e898.js">
+<link rel="modulepreload" href="./_npm/d3-fetch@3.0.1/b4e2ad9a.js">
+<link rel="modulepreload" href="./_npm/d3-force@3.0.0/5e804d15.js">
+<link rel="modulepreload" href="./_npm/d3-format@3.1.2/3785bf2d.js">
+<link rel="modulepreload" href="./_npm/d3-geo@3.1.1/40599fb3.js">
+<link rel="modulepreload" href="./_npm/d3-hierarchy@3.1.2/e49e792c.js">
+<link rel="modulepreload" href="./_npm/d3-interpolate@3.0.1/8d1e5425.js">
+<link rel="modulepreload" href="./_npm/d3-path@3.1.0/20d3f133.js">
+<link rel="modulepreload" href="./_npm/d3-polygon@3.0.1/7553081f.js">
+<link rel="modulepreload" href="./_npm/d3-quadtree@3.0.1/0dfd751c.js">
+<link rel="modulepreload" href="./_npm/d3-random@3.0.1/3c90ee06.js">
+<link rel="modulepreload" href="./_npm/d3-scale@4.0.2/720b7f0a.js">
+<link rel="modulepreload" href="./_npm/d3-scale-chromatic@3.1.0/ba24c2e7.js">
+<link rel="modulepreload" href="./_npm/d3-selection@3.0.0/4d94e5b7.js">
+<link rel="modulepreload" href="./_npm/d3-shape@3.2.0/6d3a6726.js">
+<link rel="modulepreload" href="./_npm/d3-time@3.1.0/9f03c579.js">
+<link rel="modulepreload" href="./_npm/d3-time-format@4.1.0/07c9626f.js">
+<link rel="modulepreload" href="./_npm/d3-timer@3.0.1/b58a267d.js">
+<link rel="modulepreload" href="./_npm/d3-transition@3.0.1/004da2ac.js">
+<link rel="modulepreload" href="./_npm/d3-zoom@3.0.0/b5786b3f.js">
+<link rel="modulepreload" href="./_npm/internmap@2.0.3/e08981d9.js">
+<link rel="modulepreload" href="./_npm/delaunator@5.1.0/d4ec0aa1.js">
+<link rel="modulepreload" href="./_npm/robust-predicates@3.0.3/42820bfa.js">
 <script type="module">
 
-import {define} from "./_observablehq/client.3942b133.js";
-import {registerFile} from "./_observablehq/stdlib.318537f4.js";
+import {define} from "./_observablehq/client.50a456f6.js";
+import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.a40f0815.json","lastModified":1774574247830,"size":14526});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.5b1781fb.json","lastModified":1774579235938,"size":23532});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
+}});
+
+define({id: "d8c33e88", inputs: ["tooltip","data","dateSelect","wrapper","tableContainer","formatTime","metrics","svgDep","svgDepContainer","svgArr","svgArrContainer","dateHeading","staffBanner","statusSelect"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","colorByBusyness","statusColor","minutesSinceMidnight","minutesLabel","drawChart","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (tooltip,data,dateSelect,wrapper,tableContainer,formatTime,metrics,svgDep,svgDepContainer,svgArr,svgArrContainer,dateHeading,staffBanner,statusSelect) => {
+const d3 = await import("./_npm/d3@7.9.0/66d82917.js");
+// Render live summary, busyness chart and auto-refresh (10 minutes)
+// Use Observable Framework's npm import syntax so D3 is bundled correctly.
+
+// Helper to safely parse times in Toronto timezone context
+function toLocalDate(iso) {
+  if (!iso) return null;
+  return new Date(iso);
+}
+
+function buildUI() {
+  // Top containers
+  const wrapper = document.createElement('div');
+  wrapper.className = 'top-row';
+
+  const summaryPanel = document.createElement('div');
+  summaryPanel.className = 'summary-panel';
+
+  const chartCard = document.createElement('div');
+  chartCard.className = 'chart-card';
+
+  // Metric cards
+  const metrics = {
+    active: createMetricCard('Active', '—', 'metric-active-card'),
+    delayed: createMetricCard('Delayed', '—', 'metric-delayed-card'),
+    scheduled: createMetricCard('Scheduled', '—', 'metric-scheduled-card'),
+    total: createMetricCard('Total flights', '—', 'metric-total-card')
+  };
+  Object.values(metrics).forEach(c => summaryPanel.appendChild(c.card));
+
+  // Staffing recommendation banner (below summary cards)
+  const staffBanner = document.createElement('div');
+  staffBanner.className = 'staff-banner';
+  staffBanner.textContent = 'Staffing insight will appear here once data is loaded.';
+  summaryPanel.appendChild(staffBanner);
+
+  // Chart title
+  const title = document.createElement('div');
+  title.className = 'chart-title';
+  title.textContent = 'Flight volume by hour — next 24 hours';
+
+  // Controls row: date selector + status filter
+  const controlRow = document.createElement('div');
+  controlRow.className = 'control-row';
+
+  const dateGroup = document.createElement('div');
+  dateGroup.className = 'control-group';
+  const dateLabel = document.createElement('span');
+  dateLabel.textContent = 'Date:';
+  const dateSelect = document.createElement('select');
+  dateGroup.appendChild(dateLabel);
+  dateGroup.appendChild(dateSelect);
+
+  const statusGroup = document.createElement('div');
+  statusGroup.className = 'control-group';
+  const statusLabel = document.createElement('span');
+  statusLabel.textContent = 'Filter status:';
+  const statusSelect = document.createElement('select');
+  statusSelect.innerHTML = `
+    <option value="all">All</option>
+    <option value="active">Active</option>
+    <option value="delayed">Delayed</option>
+    <option value="landed">Landed</option>
+    <option value="cancelled">Cancelled</option>
+    <option value="scheduled">Scheduled</option>`;
+  statusGroup.appendChild(statusLabel);
+  statusGroup.appendChild(statusSelect);
+
+  controlRow.appendChild(dateGroup);
+  controlRow.appendChild(statusGroup);
+
+  // Selected date heading
+  const dateHeading = document.createElement('div');
+  dateHeading.className = 'date-heading';
+
+  // Subtitle
+  const sub = document.createElement('div');
+  sub.className = 'chart-sub';
+  sub.textContent = 'Separate hourly views for departures and arrivals. Bars colored by overall busyness (low, moderate, high).';
+
+  // SVG containers for departures and arrivals
+  const svgDepContainer = document.createElement('div');
+  svgDepContainer.style.width = '100%';
+  svgDepContainer.style.overflowX = 'auto';
+  svgDepContainer.style.overflowY = 'visible';
+  svgDepContainer.style.marginBottom = '0.75rem';
+
+  const depLabel = document.createElement('div');
+  depLabel.className = 'chart-sub';
+  depLabel.style.marginBottom = '0.1rem';
+  depLabel.textContent = 'Departures by hour';
+
+  const svgDep = d3.select(svgDepContainer).append('svg');
+
+  const svgArrContainer = document.createElement('div');
+  svgArrContainer.style.width = '100%';
+  svgArrContainer.style.overflowX = 'auto';
+  svgArrContainer.style.overflowY = 'visible';
+
+  const arrLabel = document.createElement('div');
+  arrLabel.className = 'chart-sub';
+  arrLabel.style.marginTop = '0.4rem';
+  arrLabel.style.marginBottom = '0.1rem';
+  arrLabel.textContent = 'Arrivals by hour';
+
+  const svgArr = d3.select(svgArrContainer).append('svg');
+
+  // Busyness legend
+  const busLegend = document.createElement('div');
+  busLegend.className = 'busyness-legend';
+  busLegend.innerHTML = `<span class="busyness-swatch bus-low"></span><span style="color:#374151">Low</span>
+                         <span class="busyness-swatch bus-med"></span><span style="color:#374151">Moderate</span>
+                         <span class="busyness-swatch bus-high"></span><span style="color:#374151">High</span>`;
+
+  // Tooltip for bars
+  const tooltip = document.createElement('div');
+  tooltip.className = 'chart-tooltip hidden';
+
+  chartCard.appendChild(title);
+  chartCard.appendChild(controlRow);
+  chartCard.appendChild(dateHeading);
+  chartCard.appendChild(sub);
+  chartCard.appendChild(depLabel);
+  chartCard.appendChild(svgDepContainer);
+  chartCard.appendChild(arrLabel);
+  chartCard.appendChild(svgArrContainer);
+  chartCard.appendChild(busLegend);
+  chartCard.appendChild(tooltip);
+
+  wrapper.appendChild(summaryPanel);
+  wrapper.appendChild(chartCard);
+
+  // Container for the flight table below the top row
+  const tableContainer = document.createElement('div');
+  tableContainer.style.marginTop = '1.25rem';
+
+  return {
+    wrapper,
+    summaryPanel,
+    staffBanner,
+    metrics,
+    chartCard,
+    dateSelect,
+    statusSelect,
+    dateHeading,
+    svgDep,
+    svgArr,
+    svgDepContainer,
+    svgArrContainer,
+    tooltip,
+    tableContainer
+  };
+}
+
+function createMetricCard(label, num, variantClass) {
+  const card = document.createElement('div');
+  card.className = 'metric-card';
+  if (variantClass) card.classList.add(variantClass);
+  const n = document.createElement('div'); n.className = 'metric-num'; n.textContent = num;
+  const l = document.createElement('div'); l.className = 'metric-label'; l.textContent = label;
+  card.appendChild(n); card.appendChild(l);
+  return {card, set: (v) => n.textContent = v};
+}
+
+// Time helpers in Toronto timezone
+function torontoDateKey(date) {
+  return date.toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+}
+
+function torontoHour(date) {
+  return Number(date.toLocaleString('en-CA', {
+    timeZone: 'America/Toronto',
+    hour12: false,
+    hour: '2-digit'
+  }));
+}
+
+function hourLabelFromIndex(h) {
+  const base = new Date(Date.UTC(2000, 0, 1, h, 0, 0));
+  return base.toLocaleTimeString('en-CA', {
+    timeZone: 'America/Toronto',
+    hour: 'numeric',
+    hour12: true
+  });
+}
+
+function buildBinsForDate(flights, dateKey) {
+  const bins = Array.from({ length: 24 }, (_, h) => ({
+    hour: h,
+    label: hourLabelFromIndex(h),
+    departures: 0,
+    arrivals: 0,
+    total: 0,
+    airlinesDep: {},
+    airlinesArr: {},
+    flightsDep: [],
+    flightsArr: []
+  }));
+
+  flights.forEach(f => {
+    const when = toLocalDate(f.scheduledTime);
+    if (!when) return;
+    if (torontoDateKey(when) !== dateKey) return;
+    const h = torontoHour(when);
+    if (h < 0 || h > 23) return;
+    const bin = bins[h];
+    if (f.type === 'departure') {
+      bin.departures++;
+      bin.airlinesDep[f.airline] = (bin.airlinesDep[f.airline] || 0) + 1;
+      bin.flightsDep.push(f);
+    } else {
+      bin.arrivals++;
+      bin.airlinesArr[f.airline] = (bin.airlinesArr[f.airline] || 0) + 1;
+      bin.flightsArr.push(f);
+    }
+    bin.total = bin.departures + bin.arrivals;
+  });
+
+  return bins;
+}
+
+function colorByBusyness(total, tertiles) {
+  if (total <= tertiles[0]) return '#bbf7d0'; // low
+  if (total <= tertiles[1]) return '#fde68a'; // med
+  return '#fecaca'; // high
+}
+
+// Map resolvedStatus to dot colours used on the timeline
+function statusColor(resolvedStatus) {
+  switch (resolvedStatus) {
+    case 'active':
+      return '#22c55e'; // green
+    case 'delayed':
+      return '#f97316'; // orange
+    case 'landed':
+    case 'cancelled':
+      return '#9ca3af'; // gray
+    case 'scheduled':
+    default:
+      return '#6366f1'; // blue
+  }
+}
+// Convert a Date in Toronto time to minutes since midnight
+function minutesSinceMidnight(date) {
+  const parts = date.toLocaleTimeString('en-CA', {
+    timeZone: 'America/Toronto',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  }).split(':');
+  const h = Number(parts[0]);
+  const m = Number(parts[1]);
+  return h * 60 + m;
+}
+
+function minutesLabel(m) {
+  const h = Math.round(m / 60);
+  return hourLabelFromIndex(h);
+}
+
+function drawChart(svg, svgContainer, bins, key, currentMinutes) {
+  const margin = { top: 24, right: 16, bottom: 40, left: 40 };
+  const baseWidth = svgContainer.clientWidth || 800;
+  const width = baseWidth;
+  const height = 240;
+
+  svg.attr("width", width).attr("height", height);
+  svg.selectAll("*").remove();
+
+  const g = svg
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+
+  const hours = bins.map(d => d.hour);
+
+  const x0 = d3
+    .scaleBand()
+    .domain(hours)
+    .range([0, innerWidth])
+    .paddingInner(0.15);
+
+  const maxFlights =
+    d3.max(bins, d =>
+      key === "departures" ? d.flightsDep.length : d.flightsArr.length
+    ) || 0;
+
+  const y = d3
+    .scaleLinear()
+    .domain([0, Math.max(1, maxFlights)])
+    .nice()
+    .range([innerHeight, 0]);
+
+  const xAxis = d3
+    .axisBottom(x0)
+    .tickValues(hours)
+    .tickFormat(h => hourLabelFromIndex(h));
+
+  g
+    .append("g")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(xAxis)
+    .call(g => g.selectAll(".tick line").attr("opacity", 0.3))
+    .call(g => g.select(".domain").attr("opacity", 0.4));
+
+  const yAxis = d3
+    .axisLeft(y)
+    .ticks(Math.min(4, maxFlights))
+    .tickFormat(d => (d === 0 ? "" : d));
+
+  g
+    .append("g")
+    .call(yAxis)
+    .call(g => g.selectAll(".tick line").attr("opacity", 0.15))
+    .call(g => g.select(".domain").attr("opacity", 0.4));
+
+  // Horizontal grid lines.
+  g
+    .append("g")
+    .attr("class", "grid-lines")
+    .selectAll("line")
+    .data(y.ticks(Math.min(4, maxFlights)))
+    .join("line")
+    .attr("x1", 0)
+    .attr("x2", innerWidth)
+    .attr("y1", d => y(d))
+    .attr("y2", d => y(d))
+    .attr("stroke", "#e2e8f0")
+    .attr("stroke-width", 0.7)
+    .attr("stroke-dasharray", "2,2");
+
+  // Current time marker if viewing "today".
+  if (currentMinutes != null) {
+    const hourIndex = Math.floor(currentMinutes / 60);
+    const minuteInHour = currentMinutes % 60;
+    const bandX = x0(hourIndex);
+    if (bandX != null) {
+      const bandWidth = x0.bandwidth();
+      const frac = minuteInHour / 60;
+      const xNow = bandX + bandWidth * frac;
+      g
+        .append("line")
+        .attr("x1", xNow)
+        .attr("x2", xNow)
+        .attr("y1", 0)
+        .attr("y2", innerHeight)
+        .attr("stroke", "#ff4d4f")
+        .attr("stroke-dasharray", "4,3")
+        .attr("stroke-width", 1.2);
+    }
+  }
+
+  const tooltipSel = d3.select(tooltip);
+
+  const bandWidth = x0.bandwidth();
+  const barWidth = bandWidth * 0.6;
+
+  const hourGroups = g
+    .selectAll(".hour-group")
+    .data(bins)
+    .join("g")
+    .attr("class", "hour-group")
+    .attr("transform", d => `translate(${x0(d.hour)},0)`);
+
+  hourGroups.each(function (bin) {
+    const flights = key === "departures" ? bin.flightsDep : bin.flightsArr;
+    const group = d3.select(this);
+
+    flights.forEach((f, i) => {
+      const yBottom = y(i);
+      const yTop = y(i + 1);
+
+      group
+        .append("rect")
+        .attr("x", (bandWidth - barWidth) / 2)
+        .attr("y", yTop)
+        .attr("width", barWidth)
+        .attr("height", Math.max(0, yBottom - yTop))
+        .attr("rx", 2)
+        .attr("fill", statusColor(f.resolvedStatus))
+        .style("cursor", "pointer")
+        .on("mousemove", (event) => {
+          const local = toLocalDate(f.scheduledTime);
+          const timeStr = local.toLocaleTimeString("en-CA", {
+            hour: "numeric",
+            minute: "2-digit"
+          });
+          const kind = f.type === "departure" ? "Departs" : "Arrives";
+
+          const html = `
+            <div><strong>${f.flightNumber}</strong> · ${f.airline}</div>
+            <div>${kind} ${f.type === "departure" ? "to" : "from"} ${
+              f.otherAirport
+            } (${f.otherAirportCode})</div>
+            <div>${timeStr} · ${statusLabel(f.resolvedStatus)}</div>
+          `;
+
+          tooltipSel
+            .html(html)
+            .classed("hidden", false)
+            .style("left", `${event.clientX + 12}px`)
+            .style("top", `${event.clientY + 12}px`);
+        })
+        .on("mouseleave", () => {
+          tooltipSel.classed("hidden", true);
+        });
+    });
+  });
+}
+
+function pillClass(resolvedStatus) {
+  return `pill-${resolvedStatus}`;
+}
+
+function rowClass(resolvedStatus) {
+  return `status-${resolvedStatus}`;
+}
+
+function statusLabel(resolvedStatus, rawStatus, delay) {
+  const labels = {
+    active: 'Active',
+    delayed: `Delayed${delay > 0 ? ` +${delay} min` : ''}`,
+    landed: 'Landed',
+    cancelled: 'Cancelled',
+    scheduled: 'Scheduled',
+  };
+  return labels[resolvedStatus] ?? rawStatus ?? 'Unknown';
+}
+
+let allFlights = data.flights ?? [];
+let fetchedAt = data.fetchedAt ? new Date(data.fetchedAt) : null;
+const todayKey = torontoDateKey(new Date());
+let availableDateKeys = [];
+let currentDateKey = null;
+let currentStatusFilter = 'all';
+let peakBinGlobal = null;
+
+let metaRow = null;
+let metaBaseSpan = null;
+let countdownSpan = null;
+
+const REFRESH_MS = 10 * 60 * 1000;
+let nextRefreshAt = Date.now() + REFRESH_MS;
+
+function recomputeDateOptions() {
+  const keysSet = new Set();
+  allFlights.forEach(f => {
+    const d = toLocalDate(f.scheduledTime);
+    if (!d) return;
+    keysSet.add(torontoDateKey(d));
+  });
+  availableDateKeys = Array.from(keysSet).sort();
+  if (!currentDateKey) {
+    currentDateKey = availableDateKeys.includes(todayKey)
+      ? todayKey
+      : availableDateKeys[0] || todayKey;
+  } else if (!availableDateKeys.includes(currentDateKey) && availableDateKeys.length) {
+    currentDateKey = availableDateKeys[0];
+  }
+
+  dateSelect.innerHTML = '';
+  availableDateKeys.forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k;
+    const d = new Date(`${k}T00:00:00`);
+    opt.textContent = d.toLocaleDateString('en-CA', {
+      timeZone: 'America/Toronto',
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+    if (k === currentDateKey) opt.selected = true;
+    dateSelect.appendChild(opt);
+  });
+}
+
+function ensureMetaRow() {
+  if (metaRow) return;
+  metaRow = document.createElement('div');
+  metaRow.id = 'visual-meta-row';
+  metaRow.className = 'meta';
+  metaBaseSpan = document.createElement('span');
+  metaBaseSpan.id = 'meta-base';
+  countdownSpan = document.createElement('span');
+  countdownSpan.id = 'refresh-countdown';
+  countdownSpan.style.marginLeft = '0.5rem';
+  metaRow.appendChild(metaBaseSpan);
+  metaRow.appendChild(countdownSpan);
+  wrapper.appendChild(metaRow);
+}
+
+function updateMeta(visibleCount) {
+  if (!fetchedAt) return;
+  ensureMetaRow();
+  const baseText = `Last updated: ${fetchedAt.toLocaleString('en-CA', {
+    timeZone: 'America/Toronto',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })} ET  ·  ${visibleCount} flight${visibleCount !== 1 ? 's' : ''} shown`;
+  metaBaseSpan.textContent = baseText;
+}
+
+function updateCountdown() {
+  if (!countdownSpan || !nextRefreshAt) return;
+  const now = Date.now();
+  const remainingMs = Math.max(0, nextRefreshAt - now);
+  const totalSec = Math.floor(remainingMs / 1000);
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+  const ss = String(totalSec % 60).padStart(2, '0');
+  countdownSpan.textContent = ` · Refresh in ${mm}:${ss}`;
+}
+
+setInterval(updateCountdown, 1000);
+
+function renderTable(flightsForDate) {
+  tableContainer.innerHTML = '';
+  const filtered = flightsForDate.filter(f =>
+    currentStatusFilter === 'all' ? true : f.resolvedStatus === currentStatusFilter
+  );
+
+  if (filtered.length === 0) {
+    const box = document.createElement('div');
+    box.className = 'empty-box';
+    box.textContent = 'No flights found for this date and filters.';
+    tableContainer.appendChild(box);
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'flight-board';
+
+  const rows = filtered.map((f) => {
+    const airport = f.otherAirportCode
+      ? `${f.otherAirport} (${f.otherAirportCode})`
+      : f.otherAirport;
+    const label = statusLabel(f.resolvedStatus, f.status, f.delay);
+    return `
+      <tr class="${rowClass(f.resolvedStatus)}">
+        <td><span class="badge badge-${f.type === 'departure' ? 'dep' : 'arr'}">${f.type === 'departure' ? 'DEP' : 'ARR'}</span></td>
+        <td><strong>${f.flightNumber}</strong></td>
+        <td>${f.airline}</td>
+        <td>${airport}</td>
+        <td>${formatTime(f.scheduledTime)}</td>
+        <td><span class="status-pill ${pillClass(f.resolvedStatus)}">${label}</span></td>
+      </tr>`;
+  }).join('');
+
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Flight</th>
+        <th>Airline</th>
+        <th>${'Origin / Destination'}</th>
+        <th>Scheduled (ET)</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>`;
+
+  tableContainer.appendChild(table);
+}
+
+function renderForSelection() {
+  if (!currentDateKey) return;
+  const flightsForDate = allFlights.filter(f => {
+    const d = toLocalDate(f.scheduledTime);
+    return d && torontoDateKey(d) === currentDateKey;
+  });
+
+  // metrics for selected date
+  const totalActive = flightsForDate.filter(f => f.resolvedStatus === 'active').length;
+  const totalDelayed = flightsForDate.filter(f => f.resolvedStatus === 'delayed').length;
+  const totalScheduled = flightsForDate.filter(f => f.resolvedStatus === 'scheduled').length;
+  const totalFlights = flightsForDate.length;
+  metrics.active.set(totalActive);
+  metrics.delayed.set(totalDelayed);
+  metrics.scheduled.set(totalScheduled);
+  metrics.total.set(totalFlights);
+
+  const bins = buildBinsForDate(flightsForDate, currentDateKey);
+
+  // current hour marker only if viewing today
+  let currentHourIndex = null;
+  const now = new Date();
+  if (torontoDateKey(now) === currentDateKey) {
+    currentHourIndex = torontoHour(now);
+  }
+
+  // peak bin across total flights
+  peakBinGlobal = null;
+  bins.forEach(b => {
+    if (!peakBinGlobal || b.total > peakBinGlobal.total) {
+      peakBinGlobal = b;
+    }
+  });
+
+    let currentMinutes = null;
+    if (torontoDateKey(now) === currentDateKey) {
+      const nowLocal = new Date(
+        now.toLocaleString('en-CA', { timeZone: 'America/Toronto' })
+      );
+      currentMinutes = minutesSinceMidnight(nowLocal);
+    }
+
+    drawChart(svgDep, svgDepContainer, bins, 'departures', currentMinutes);
+    drawChart(svgArr, svgArrContainer, bins, 'arrivals', currentMinutes);
+
+  // selected date heading
+  const d = new Date(`${currentDateKey}T00:00:00`);
+  dateHeading.textContent = d.toLocaleDateString('en-CA', {
+    timeZone: 'America/Toronto',
+    weekday: 'long',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
+  // staffing recommendation banner
+  if (peakBinGlobal && peakBinGlobal.total > 0) {
+    const startLabel = hourLabelFromIndex(peakBinGlobal.hour);
+    const endHour = (peakBinGlobal.hour + 1) % 24;
+    const endLabel = hourLabelFromIndex(endHour);
+    staffBanner.textContent = `High demand expected between ${startLabel} – ${endLabel} (≈${peakBinGlobal.total} flights) — consider increasing staffing.`;
+  } else {
+    staffBanner.textContent = 'No significant demand peaks detected for the selected date.';
+  }
+
+  renderTable(flightsForDate);
+  updateMeta(flightsForDate.length);
+}
+
+function applyNewData(srcData) {
+  allFlights = srcData.flights ?? [];
+  fetchedAt = srcData.fetchedAt ? new Date(srcData.fetchedAt) : null;
+  recomputeDateOptions();
+  renderForSelection();
+}
+
+// Wire up controls
+dateSelect.addEventListener('change', () => {
+  currentDateKey = dateSelect.value;
+  renderForSelection();
+});
+
+statusSelect.addEventListener('change', () => {
+  currentStatusFilter = statusSelect.value;
+  renderForSelection();
+});
+
+// initial render
+try {
+  applyNewData(data);
+} catch (e) {
+  console.warn('Could not render chart initially', e);
+}
+
+// Auto-refresh every 10 minutes: attempt to fetch the JSON file and re-render if successful.
+const refreshTimer = setInterval(async () => {
+  try {
+    const resp = await fetch('data/flights.json');
+    if (!resp.ok) return;
+    const json = await resp.json();
+    applyNewData(json);
+    nextRefreshAt = Date.now() + REFRESH_MS;
+  } catch (e) {
+    // fallback: do nothing; keep showing current snapshot
+    console.warn('Auto-refresh failed:', e);
+  }
+}, REFRESH_MS);
+
+// Clean up on notebook disposal (if runtime provides a hook)
+if (typeof window !== 'undefined') {
+  const beforeUnload = () => clearInterval(refreshTimer);
+  window.addEventListener('beforeunload', beforeUnload);
+}
+
+return {d3,toLocalDate,buildUI,createMetricCard,torontoDateKey,torontoHour,hourLabelFromIndex,buildBinsForDate,colorByBusyness,statusColor,minutesSinceMidnight,minutesLabel,drawChart,pillClass,rowClass,statusLabel,allFlights,fetchedAt,todayKey,availableDateKeys,currentDateKey,currentStatusFilter,peakBinGlobal,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,renderTable,renderForSelection,applyNewData,refreshTimer};
 }});
 
 define({id: "c9eddbf6", inputs: ["data","display"], body: (data,display) => {
@@ -277,15 +994,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block">
-  <div class="observablehq--inspect observablehq--error">SyntaxError: Unexpected token (417:8)</div>
-</div>
+<div class="observablehq observablehq--block"><!--:d8c33e88:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T01:17:23">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T02:40:31">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

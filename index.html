@@ -18,16 +18,16 @@
 import {define} from "./_observablehq/client.3942b133.js";
 import {registerFile} from "./_observablehq/stdlib.318537f4.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.d9373ec4.json","lastModified":1774570280278,"size":13545});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.05d03337.json","lastModified":1774570459639,"size":13545});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "677b8f5f", inputs: ["display","data"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","computeHourlyBins","colorByBusyness","drawChart","wrapper","metrics","svg","svgContainer","renderFromSource","REFRESH_MS","refreshTimer"], body: async (display,data) => {
+define({id: "10745602", inputs: ["display","data"], outputs: ["select","scaleBand","scaleLinear","max","axisBottom","axisLeft","format","toLocalDate","buildUI","createMetricCard","computeHourlyBins","colorByBusyness","drawChart","wrapper","metrics","svg","svgContainer","renderFromSource","REFRESH_MS","refreshTimer"], body: async (display,data) => {
 // Render live summary, busyness chart and auto-refresh (10 minutes)
-const d3 = await import("https://cdn.jsdelivr.net/npm/d3@7?module");
+const {select, scaleBand, scaleLinear, max, axisBottom, axisLeft, format} = await import("https://cdn.jsdelivr.net/npm/d3@7?module");
 
 // Helper to safely parse times in Toronto timezone context
 function toLocalDate(iso) {
@@ -67,7 +67,7 @@ function buildUI() {
   const svgContainer = document.createElement('div');
   svgContainer.style.width = '100%';
   svgContainer.style.overflow = 'hidden';
-  const svg = d3.select(svgContainer).append('svg');
+  const svg = select(svgContainer).append('svg');
 
   // Busyness legend
   const busLegend = document.createElement('div');
@@ -138,9 +138,9 @@ function drawChart(svg, svgContainer, bins) {
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
 
-  const x0 = d3.scaleBand().domain(bins.map(d=>d.label)).range([0,w]).paddingInner(0.15);
-  const x1 = d3.scaleBand().domain(['departures','arrivals']).range([0,x0.bandwidth()]).padding(0.05);
-  const y = d3.scaleLinear().domain([0, d3.max(bins, d=>Math.max(d.departures,d.arrivals)) || 1]).nice().range([h,0]);
+  const x0 = scaleBand().domain(bins.map(d=>d.label)).range([0,w]).paddingInner(0.15);
+  const x1 = scaleBand().domain(['departures','arrivals']).range([0,x0.bandwidth()]).padding(0.05);
+  const y = scaleLinear().domain([0, max(bins, d=>Math.max(d.departures,d.arrivals)) || 1]).nice().range([h,0]);
 
   // compute tertiles for busyness across totals
   const totals = bins.map(d=>d.total).sort((a,b)=>a-b);
@@ -161,8 +161,8 @@ function drawChart(svg, svgContainer, bins) {
     .attr('stroke', '#00000000');
 
   // axes
-  const xAxis = d3.axisBottom(x0).tickValues(bins.filter((_,i)=> i%3===0).map(d=>d.label));
-  const yAxis = d3.axisLeft(y).ticks(4).tickFormat(d3.format('d'));
+  const xAxis = axisBottom(x0).tickValues(bins.filter((_,i)=> i%3===0).map(d=>d.label));
+  const yAxis = axisLeft(y).ticks(4).tickFormat(format('d'));
   g.append('g').attr('transform', `translate(0,${h})`).call(xAxis).selectAll('text').style('font-size','11px');
   g.append('g').call(yAxis).selectAll('text').style('font-size','11px');
 
@@ -233,7 +233,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', beforeUnload);
 }
 
-return {d3,toLocalDate,buildUI,createMetricCard,computeHourlyBins,colorByBusyness,drawChart,wrapper,metrics,svg,svgContainer,renderFromSource,REFRESH_MS,refreshTimer};
+return {select,scaleBand,scaleLinear,max,axisBottom,axisLeft,format,toLocalDate,buildUI,createMetricCard,computeHourlyBins,colorByBusyness,drawChart,wrapper,metrics,svg,svgContainer,renderFromSource,REFRESH_MS,refreshTimer};
 }});
 
 define({id: "c9eddbf6", inputs: ["data","display"], body: (data,display) => {
@@ -514,13 +514,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block"><!--:677b8f5f:--></div>
+<div class="observablehq observablehq--block"><!--:10745602:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T00:11:17">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T00:14:16">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

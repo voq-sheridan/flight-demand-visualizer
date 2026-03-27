@@ -52,14 +52,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.8029abf9.json","lastModified":1774571312438,"size":16596});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.e1891373.json","lastModified":1774571703942,"size":14300});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "04beb233", inputs: ["display","data"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","computeHourlyBins","colorByBusyness","drawChart","wrapper","metrics","svg","svgContainer","renderFromSource","REFRESH_MS","refreshTimer"], body: async (display,data) => {
+define({id: "a1679f41", inputs: ["display","data"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","computeHourlyBins","colorByBusyness","drawChart","wrapper","metrics","svg","svgContainer","renderFromSource","REFRESH_MS","refreshTimer"], body: async (display,data) => {
 const d3 = await import("./_npm/d3@7.9.0/66d82917.js");
 // Render live summary, busyness chart and auto-refresh (10 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
@@ -175,7 +175,6 @@ function drawChart(svg, svgContainer, bins) {
   const h = height - margin.top - margin.bottom;
 
   const x0 = d3.scaleBand().domain(bins.map(d=>d.label)).range([0,w]).paddingInner(0.15);
-  const x1 = d3.scaleBand().domain(['departures','arrivals']).range([0,x0.bandwidth()]).padding(0.05);
   const y = d3.scaleLinear().domain([0, d3.max(bins, d=>Math.max(d.departures,d.arrivals)) || 1]).nice().range([h,0]);
 
   // compute tertiles for busyness across totals
@@ -183,18 +182,32 @@ function drawChart(svg, svgContainer, bins) {
   const t1 = totals[Math.floor(totals.length/3)] ?? 0;
   const t2 = totals[Math.floor((totals.length*2)/3)] ?? 0;
 
-  const groups = g.selectAll('.hour').data(bins).join('g').attr('class','hour').attr('transform', d=>`translate(${x0(d.label)},0)`);
+  const bandWidth = x0.bandwidth();
+  const barWidth = bandWidth * 0.38; // leave a small gap between dep/arr
+  const centerOffset = bandWidth / 2;
+  const gap = bandWidth * 0.08;
 
-  groups.selectAll('rect').data(d => [
-    {key:'departures', value:d.departures, total:d.total},
-    {key:'arrivals', value:d.arrivals, total:d.total}
-  ]).join('rect')
-    .attr('x', (d)=> x1(d.key))
-    .attr('y', d=> y(d.value))
-    .attr('width', x1.bandwidth())
-    .attr('height', d=> Math.max(0, h - y(d.value)))
-    .attr('fill', d => colorByBusyness(d.total, [t1,t2]))
-    .attr('stroke', '#00000000');
+  // Departures (left bar in each hour)
+  g.selectAll('.bar-dep')
+    .data(bins)
+    .join('rect')
+      .attr('class', 'bar-dep')
+      .attr('x', d => x0(d.label) + centerOffset - barWidth - gap/2)
+      .attr('y', d => y(d.departures))
+      .attr('width', barWidth)
+      .attr('height', d => Math.max(0, h - y(d.departures)))
+      .attr('fill', d => colorByBusyness(d.total, [t1,t2]));
+
+  // Arrivals (right bar in each hour)
+  g.selectAll('.bar-arr')
+    .data(bins)
+    .join('rect')
+      .attr('class', 'bar-arr')
+      .attr('x', d => x0(d.label) + centerOffset + gap/2)
+      .attr('y', d => y(d.arrivals))
+      .attr('width', barWidth)
+      .attr('height', d => Math.max(0, h - y(d.arrivals)))
+      .attr('fill', d => colorByBusyness(d.total, [t1,t2]));
 
   // axes
   const xAxis = d3.axisBottom(x0).tickValues(bins.filter((_,i)=> i%3===0).map(d=>d.label));
@@ -559,13 +572,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block"><!--:04beb233:--></div>
+<div class="observablehq observablehq--block"><!--:a1679f41:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T00:28:27">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T00:34:58">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

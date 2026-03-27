@@ -412,10 +412,6 @@ function minutesLabel(m) {
   return hourLabelFromIndex(h);
 }
 
-// Draw a per-flight timeline for departures or arrivals
-function drawChart(svg, svgContainer, flightsForDate, key, isToday) {
-  const margin = { top: 20, right: 16, bottom: 32, left: 50 };
-  const baseWidth = svgContainer.clientWidth || 800;
 function drawChart(svg, svgContainer, bins, key, currentMinutes) {
   const margin = { top: 24, right: 16, bottom: 40, left: 40 };
   const baseWidth = svgContainer.clientWidth || 800;
@@ -565,12 +561,6 @@ function drawChart(svg, svgContainer, bins, key, currentMinutes) {
           tooltipSel.classed("hidden", true);
         });
     });
-  });
-}
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
   });
 }
 

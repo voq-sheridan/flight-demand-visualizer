@@ -190,9 +190,6 @@ const data = await FileAttachment("data/flights.json").json();
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 import * as d3 from "npm:d3@7";
 
-// Use the framework-resolved asset URL so refresh works in both preview and built output.
-const flightsJsonUrl = await FileAttachment("data/flights.json").url();
-
 // Helper to safely parse times in Toronto timezone context
 function toLocalDate(iso) {
   if (!iso) return null;
@@ -732,7 +729,7 @@ function updateCountdown() {
   countdownSpan.textContent = ` · Refresh in ${mm}:${ss}`;
 }
 
-setInterval(updateCountdown, 1000);
+const countdownTimer = setInterval(updateCountdown, 1000);
 
 function renderTable(flightsForDate) {
   tableContainer.innerHTML = '';
@@ -870,9 +867,7 @@ try {
 // Auto-refresh every 10 minutes: attempt to fetch the JSON file and re-render if successful.
 const refreshTimer = setInterval(async () => {
   try {
-    const resp = await fetch(flightsJsonUrl);
-    if (!resp.ok) return;
-    const json = await resp.json();
+    const json = await FileAttachment("data/flights.json").json();
     applyNewData(json);
     nextRefreshAt = Date.now() + REFRESH_MS;
   } catch (e) {
@@ -883,8 +878,19 @@ const refreshTimer = setInterval(async () => {
 
 // Clean up on notebook disposal (if runtime provides a hook)
 if (typeof window !== 'undefined') {
-  const beforeUnload = () => clearInterval(refreshTimer);
+  const beforeUnload = () => {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+  };
   window.addEventListener('beforeunload', beforeUnload);
+}
+
+// Observable runtime cleanup on cell re-evaluation (prevents duplicate stale timers / 404 fetches).
+if (typeof invalidation !== 'undefined') {
+  invalidation.then(() => {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+  });
 }
 
 ```

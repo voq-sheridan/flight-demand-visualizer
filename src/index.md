@@ -179,7 +179,10 @@ const data = await FileAttachment("data/flights.json").json();
 
 ```js
 // Render live summary, busyness chart and auto-refresh (10 minutes)
-const {select, scaleBand, scaleLinear, max, axisBottom, axisLeft, format} = await import("https://cdn.jsdelivr.net/npm/d3@7?module");
+// Import d3 in a way that's tolerant of module shapes (some CDNs export as default)
+const _d3mod = await import("https://cdn.jsdelivr.net/npm/d3@7?module");
+const _d3 = _d3mod.default ?? _d3mod;
+const {select, scaleBand, scaleLinear, max, axisBottom, axisLeft, format} = _d3;
 
 // Helper to safely parse times in Toronto timezone context
 function toLocalDate(iso) {

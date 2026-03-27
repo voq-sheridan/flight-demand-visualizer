@@ -183,6 +183,9 @@ const data = await FileAttachment("data/flights.json").json();
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 import * as d3 from "npm:d3@7";
 
+// Use the framework-resolved asset URL so refresh works in both preview and built output.
+const flightsJsonUrl = await FileAttachment("data/flights.json").url();
+
 // Helper to safely parse times in Toronto timezone context
 function toLocalDate(iso) {
   if (!iso) return null;
@@ -821,7 +824,7 @@ try {
 // Auto-refresh every 10 minutes: attempt to fetch the JSON file and re-render if successful.
 const refreshTimer = setInterval(async () => {
   try {
-    const resp = await fetch('data/flights.json');
+    const resp = await fetch(flightsJsonUrl);
     if (!resp.ok) return;
     const json = await resp.json();
     applyNewData(json);

@@ -475,6 +475,7 @@ function isYYZArrival(f) {
 }
 
 function buildDirectionalHeatmapData(flights, dateKeys, mode) {
+  const effectiveDateKeys = dateKeys.slice(-2);
   const byDateHour = new Map();
 
   flights.forEach((f) => {
@@ -485,7 +486,7 @@ function buildDirectionalHeatmapData(flights, dateKeys, mode) {
     if (!when) return;
 
     const dateKey = torontoDateKey(when);
-    if (!dateKeys.includes(dateKey)) return;
+  if (!effectiveDateKeys.includes(dateKey)) return;
 
     const hour = torontoHour(when);
     if (hour < 0 || hour > 23) return;
@@ -506,7 +507,7 @@ function buildDirectionalHeatmapData(flights, dateKeys, mode) {
   });
 
   const cells = [];
-  dateKeys.forEach((dateKey) => {
+  effectiveDateKeys.forEach((dateKey) => {
     for (let hour = 0; hour < 24; hour++) {
       const slot = byDateHour.get(`${dateKey}|${hour}`);
       cells.push(slot ?? { dateKey, hour, total: 0, airlines: new Set() });
@@ -514,7 +515,7 @@ function buildDirectionalHeatmapData(flights, dateKeys, mode) {
   });
 
   const maxTotal = d3.max(cells, (d) => d.total) || 0;
-  return { dateKeys, cells, maxTotal };
+  return { dateKeys: effectiveDateKeys, cells, maxTotal };
 }
 
 function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {

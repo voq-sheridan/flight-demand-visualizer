@@ -18,16 +18,19 @@
 import {define} from "./_observablehq/client.3942b133.js";
 import {registerFile} from "./_observablehq/stdlib.318537f4.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.05d03337.json","lastModified":1774570459639,"size":13545});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.1114d932.json","lastModified":1774570781578,"size":13555});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "10745602", inputs: ["display","data"], outputs: ["select","scaleBand","scaleLinear","max","axisBottom","axisLeft","format","toLocalDate","buildUI","createMetricCard","computeHourlyBins","colorByBusyness","drawChart","wrapper","metrics","svg","svgContainer","renderFromSource","REFRESH_MS","refreshTimer"], body: async (display,data) => {
+define({id: "93dc7422", inputs: ["display","data"], outputs: ["_d3mod","_d3","select","scaleBand","scaleLinear","max","axisBottom","axisLeft","format","toLocalDate","buildUI","createMetricCard","computeHourlyBins","colorByBusyness","drawChart","wrapper","metrics","svg","svgContainer","renderFromSource","REFRESH_MS","refreshTimer"], body: async (display,data) => {
 // Render live summary, busyness chart and auto-refresh (10 minutes)
-const {select, scaleBand, scaleLinear, max, axisBottom, axisLeft, format} = await import("https://cdn.jsdelivr.net/npm/d3@7?module");
+// Import d3 in a way that's tolerant of module shapes (some CDNs export as default)
+const _d3mod = await import("https://cdn.jsdelivr.net/npm/d3@7?module");
+const _d3 = _d3mod.default ?? _d3mod;
+const {select, scaleBand, scaleLinear, max, axisBottom, axisLeft, format} = _d3;
 
 // Helper to safely parse times in Toronto timezone context
 function toLocalDate(iso) {
@@ -233,7 +236,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', beforeUnload);
 }
 
-return {select,scaleBand,scaleLinear,max,axisBottom,axisLeft,format,toLocalDate,buildUI,createMetricCard,computeHourlyBins,colorByBusyness,drawChart,wrapper,metrics,svg,svgContainer,renderFromSource,REFRESH_MS,refreshTimer};
+return {_d3mod,_d3,select,scaleBand,scaleLinear,max,axisBottom,axisLeft,format,toLocalDate,buildUI,createMetricCard,computeHourlyBins,colorByBusyness,drawChart,wrapper,metrics,svg,svgContainer,renderFromSource,REFRESH_MS,refreshTimer};
 }});
 
 define({id: "c9eddbf6", inputs: ["data","display"], body: (data,display) => {
@@ -514,13 +517,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block"><!--:10745602:--></div>
+<div class="observablehq observablehq--block"><!--:93dc7422:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T00:14:16">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T00:19:38">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

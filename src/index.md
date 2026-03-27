@@ -23,7 +23,6 @@ Data sourced from [AviationStack](https://aviationstack.com/).
     flex: 1 1 320px;
   }
   .metric-card {
-    background: #ffffff;
     border-radius: 8px;
     padding: 0.75rem 1rem;
     box-shadow: 0 1px 2px rgba(16,24,40,0.04);
@@ -31,6 +30,16 @@ Data sourced from [AviationStack](https://aviationstack.com/).
     flex-direction: column;
     justify-content: center;
     min-width: 140px;
+  }
+  /* Summary card variants */
+  .metric-active-card {
+    background: #dcfce7; /* green */
+  }
+  .metric-delayed-card {
+    background: #fef9c3; /* yellow */
+  }
+  .metric-scheduled-card {
+    background: #dbeafe; /* blue */
   }
   .metric-num {
     font-size: 1.5rem;
@@ -201,9 +210,9 @@ function buildUI() {
 
   // Metric cards
   const metrics = {
-    active: createMetricCard('Active', '—'),
-    delayed: createMetricCard('Delayed', '—'),
-    scheduled: createMetricCard('Scheduled', '—')
+    active: createMetricCard('Active', '—', 'metric-active-card'),
+    delayed: createMetricCard('Delayed', '—', 'metric-delayed-card'),
+    scheduled: createMetricCard('Scheduled', '—', 'metric-scheduled-card')
   };
 
   Object.values(metrics).forEach(c => summaryPanel.appendChild(c.card));
@@ -240,9 +249,10 @@ function buildUI() {
   return {wrapper, metrics, svg, svgContainer};
 }
 
-function createMetricCard(label, num) {
+function createMetricCard(label, num, variantClass) {
   const card = document.createElement('div');
   card.className = 'metric-card';
+  if (variantClass) card.classList.add(variantClass);
   const n = document.createElement('div'); n.className = 'metric-num'; n.textContent = num;
   const l = document.createElement('div'); l.className = 'metric-label'; l.textContent = label;
   card.appendChild(n); card.appendChild(l);

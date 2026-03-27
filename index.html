@@ -52,14 +52,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.5b1781fb.json","lastModified":1774579235938,"size":23532});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.fa4705cb.json","lastModified":1774579467677,"size":23532});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "d8c33e88", inputs: ["tooltip","data","dateSelect","wrapper","tableContainer","formatTime","metrics","svgDep","svgDepContainer","svgArr","svgArrContainer","dateHeading","staffBanner","statusSelect"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","colorByBusyness","statusColor","minutesSinceMidnight","minutesLabel","drawChart","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (tooltip,data,dateSelect,wrapper,tableContainer,formatTime,metrics,svgDep,svgDepContainer,svgArr,svgArrContainer,dateHeading,staffBanner,statusSelect) => {
+define({id: "df90bfe7", inputs: ["display","data","formatTime"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","staffBanner","metrics","chartCard","dateSelect","statusSelect","dateHeading","svgDep","svgArr","svgDepContainer","svgArrContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","colorByBusyness","statusColor","minutesSinceMidnight","minutesLabel","drawChart","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (display,data,formatTime) => {
 const d3 = await import("./_npm/d3@7.9.0/66d82917.js");
 // Render live summary, busyness chart and auto-refresh (10 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
@@ -223,6 +223,26 @@ function createMetricCard(label, num, variantClass) {
   card.appendChild(n); card.appendChild(l);
   return {card, set: (v) => n.textContent = v};
 }
+
+// Build the dashboard UI once and attach it to the document
+const {
+  wrapper,
+  summaryPanel,
+  staffBanner,
+  metrics,
+  chartCard,
+  dateSelect,
+  statusSelect,
+  dateHeading,
+  svgDep,
+  svgArr,
+  svgDepContainer,
+  svgArrContainer,
+  tooltip,
+  tableContainer
+} = buildUI();
+
+display(wrapper);
 
 // Time helpers in Toronto timezone
 function torontoDateKey(date) {
@@ -739,7 +759,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', beforeUnload);
 }
 
-return {d3,toLocalDate,buildUI,createMetricCard,torontoDateKey,torontoHour,hourLabelFromIndex,buildBinsForDate,colorByBusyness,statusColor,minutesSinceMidnight,minutesLabel,drawChart,pillClass,rowClass,statusLabel,allFlights,fetchedAt,todayKey,availableDateKeys,currentDateKey,currentStatusFilter,peakBinGlobal,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,renderTable,renderForSelection,applyNewData,refreshTimer};
+return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,staffBanner,metrics,chartCard,dateSelect,statusSelect,dateHeading,svgDep,svgArr,svgDepContainer,svgArrContainer,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,buildBinsForDate,colorByBusyness,statusColor,minutesSinceMidnight,minutesLabel,drawChart,pillClass,rowClass,statusLabel,allFlights,fetchedAt,todayKey,availableDateKeys,currentDateKey,currentStatusFilter,peakBinGlobal,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,renderTable,renderForSelection,applyNewData,refreshTimer};
 }});
 
 define({id: "c9eddbf6", inputs: ["data","display"], body: (data,display) => {
@@ -994,13 +1014,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block"><!--:d8c33e88:--></div>
+<div class="observablehq observablehq--block"><!--:df90bfe7:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T02:40:31">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T02:44:23">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

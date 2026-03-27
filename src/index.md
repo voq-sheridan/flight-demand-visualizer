@@ -302,7 +302,6 @@ function drawChart(svg, svgContainer, bins) {
   const h = height - margin.top - margin.bottom;
 
   const x0 = d3.scaleBand().domain(bins.map(d=>d.label)).range([0,w]).paddingInner(0.15);
-  const x1 = d3.scaleBand().domain(['departures','arrivals']).range([0,x0.bandwidth()]).padding(0.05);
   const y = d3.scaleLinear().domain([0, d3.max(bins, d=>Math.max(d.departures,d.arrivals)) || 1]).nice().range([h,0]);
 
   // compute tertiles for busyness across totals
@@ -310,18 +309,32 @@ function drawChart(svg, svgContainer, bins) {
   const t1 = totals[Math.floor(totals.length/3)] ?? 0;
   const t2 = totals[Math.floor((totals.length*2)/3)] ?? 0;
 
-  const groups = g.selectAll('.hour').data(bins).join('g').attr('class','hour').attr('transform', d=>`translate(${x0(d.label)},0)`);
+  const bandWidth = x0.bandwidth();
+  const barWidth = bandWidth * 0.38; // leave a small gap between dep/arr
+  const centerOffset = bandWidth / 2;
+  const gap = bandWidth * 0.08;
 
-  groups.selectAll('rect').data(d => [
-    {key:'departures', value:d.departures, total:d.total},
-    {key:'arrivals', value:d.arrivals, total:d.total}
-  ]).join('rect')
-    .attr('x', (d)=> x1(d.key))
-    .attr('y', d=> y(d.value))
-    .attr('width', x1.bandwidth())
-    .attr('height', d=> Math.max(0, h - y(d.value)))
-    .attr('fill', d => colorByBusyness(d.total, [t1,t2]))
-    .attr('stroke', '#00000000');
+  // Departures (left bar in each hour)
+  g.selectAll('.bar-dep')
+    .data(bins)
+    .join('rect')
+      .attr('class', 'bar-dep')
+      .attr('x', d => x0(d.label) + centerOffset - barWidth - gap/2)
+      .attr('y', d => y(d.departures))
+      .attr('width', barWidth)
+      .attr('height', d => Math.max(0, h - y(d.departures)))
+      .attr('fill', d => colorByBusyness(d.total, [t1,t2]));
+
+  // Arrivals (right bar in each hour)
+  g.selectAll('.bar-arr')
+    .data(bins)
+    .join('rect')
+      .attr('class', 'bar-arr')
+      .attr('x', d => x0(d.label) + centerOffset + gap/2)
+      .attr('y', d => y(d.arrivals))
+      .attr('width', barWidth)
+      .attr('height', d => Math.max(0, h - y(d.arrivals)))
+      .attr('fill', d => colorByBusyness(d.total, [t1,t2]));
 
   // axes
   const xAxis = d3.axisBottom(x0).tickValues(bins.filter((_,i)=> i%3===0).map(d=>d.label));

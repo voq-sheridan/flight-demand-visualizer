@@ -52,14 +52,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.fa4705cb.json","lastModified":1774579467677,"size":23532});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.ae847766.json","lastModified":1774619866487,"size":43425});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "df90bfe7", inputs: ["display","data","formatTime"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","staffBanner","metrics","chartCard","dateSelect","statusSelect","dateHeading","svgDep","svgArr","svgDepContainer","svgArrContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","colorByBusyness","statusColor","minutesSinceMidnight","minutesLabel","drawChart","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (display,data,formatTime) => {
+define({id: "07dda0b4", inputs: ["display","data","formatTime"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","staffBanner","metrics","chartCard","dateSelect","statusSelect","dateHeading","heatmapSvg","heatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","HEATMAP_COLORS","buildHeatmapData","drawHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (display,data,formatTime) => {
 const d3 = await import("./_npm/d3@7.9.0/66d82917.js");
 // Render live summary, busyness chart and auto-refresh (10 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
@@ -138,41 +138,29 @@ function buildUI() {
   // Subtitle
   const sub = document.createElement('div');
   sub.className = 'chart-sub';
-  sub.textContent = 'Separate hourly views for departures and arrivals. Bars colored by overall busyness (low, moderate, high).';
+  sub.textContent = 'GitHub-style heatmap of hourly demand across dates. Darker red indicates higher staffing pressure.';
 
-  // SVG containers for departures and arrivals
-  const svgDepContainer = document.createElement('div');
-  svgDepContainer.style.width = '100%';
-  svgDepContainer.style.overflowX = 'auto';
-  svgDepContainer.style.overflowY = 'visible';
-  svgDepContainer.style.marginBottom = '0.75rem';
+  // Heatmap container
+  const heatmapContainer = document.createElement('div');
+  heatmapContainer.className = 'heatmap-container';
+  heatmapContainer.style.marginBottom = '0.65rem';
 
-  const depLabel = document.createElement('div');
-  depLabel.className = 'chart-sub';
-  depLabel.style.marginBottom = '0.1rem';
-  depLabel.textContent = 'Departures by hour';
+  const heatmapSvg = d3
+    .select(heatmapContainer)
+    .append('svg')
+    .attr('class', 'heatmap-svg');
 
-  const svgDep = d3.select(svgDepContainer).append('svg');
-
-  const svgArrContainer = document.createElement('div');
-  svgArrContainer.style.width = '100%';
-  svgArrContainer.style.overflowX = 'auto';
-  svgArrContainer.style.overflowY = 'visible';
-
-  const arrLabel = document.createElement('div');
-  arrLabel.className = 'chart-sub';
-  arrLabel.style.marginTop = '0.4rem';
-  arrLabel.style.marginBottom = '0.1rem';
-  arrLabel.textContent = 'Arrivals by hour';
-
-  const svgArr = d3.select(svgArrContainer).append('svg');
-
-  // Busyness legend
-  const busLegend = document.createElement('div');
-  busLegend.className = 'busyness-legend';
-  busLegend.innerHTML = `<span class="busyness-swatch bus-low"></span><span style="color:#374151">Low</span>
-                         <span class="busyness-swatch bus-med"></span><span style="color:#374151">Moderate</span>
-                         <span class="busyness-swatch bus-high"></span><span style="color:#374151">High</span>`;
+  // Heatmap legend (Less -> More)
+  const heatmapLegend = document.createElement('div');
+  heatmapLegend.className = 'heatmap-legend';
+  heatmapLegend.innerHTML = `
+    <span>Less</span>
+    <span class="heatmap-swatch" style="background:#f5f5f5"></span>
+    <span class="heatmap-swatch" style="background:#fecaca"></span>
+    <span class="heatmap-swatch" style="background:#f87171"></span>
+    <span class="heatmap-swatch" style="background:#ef4444"></span>
+    <span class="heatmap-swatch" style="background:#b91c1c"></span>
+    <span>More</span>`;
 
   // Tooltip for bars
   const tooltip = document.createElement('div');
@@ -182,11 +170,8 @@ function buildUI() {
   chartCard.appendChild(controlRow);
   chartCard.appendChild(dateHeading);
   chartCard.appendChild(sub);
-  chartCard.appendChild(depLabel);
-  chartCard.appendChild(svgDepContainer);
-  chartCard.appendChild(arrLabel);
-  chartCard.appendChild(svgArrContainer);
-  chartCard.appendChild(busLegend);
+  chartCard.appendChild(heatmapContainer);
+  chartCard.appendChild(heatmapLegend);
   chartCard.appendChild(tooltip);
 
   wrapper.appendChild(summaryPanel);
@@ -205,10 +190,8 @@ function buildUI() {
     dateSelect,
     statusSelect,
     dateHeading,
-    svgDep,
-    svgArr,
-    svgDepContainer,
-    svgArrContainer,
+    heatmapSvg,
+    heatmapContainer,
     tooltip,
     tableContainer
   };
@@ -234,10 +217,8 @@ const {
   dateSelect,
   statusSelect,
   dateHeading,
-  svgDep,
-  svgArr,
-  svgDepContainer,
-  svgArrContainer,
+  heatmapSvg,
+  heatmapContainer,
   tooltip,
   tableContainer
 } = buildUI();
@@ -301,195 +282,189 @@ function buildBinsForDate(flights, dateKey) {
   return bins;
 }
 
-function colorByBusyness(total, tertiles) {
-  if (total <= tertiles[0]) return '#bbf7d0'; // low
-  if (total <= tertiles[1]) return '#fde68a'; // med
-  return '#fecaca'; // high
-}
+const HEATMAP_COLORS = ['#f5f5f5', '#fecaca', '#f87171', '#ef4444', '#b91c1c'];
 
-// Map resolvedStatus to dot colours used on the timeline
-function statusColor(resolvedStatus) {
-  switch (resolvedStatus) {
-    case 'active':
-      return '#22c55e'; // green
-    case 'delayed':
-      return '#f97316'; // orange
-    case 'landed':
-    case 'cancelled':
-      return '#9ca3af'; // gray
-    case 'scheduled':
-    default:
-      return '#6366f1'; // blue
-  }
-}
-// Convert a Date in Toronto time to minutes since midnight
-function minutesSinceMidnight(date) {
-  const parts = date.toLocaleTimeString('en-CA', {
-    timeZone: 'America/Toronto',
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit'
-  }).split(':');
-  const h = Number(parts[0]);
-  const m = Number(parts[1]);
-  return h * 60 + m;
-}
+function buildHeatmapData(flights) {
+  const byDateHour = new Map();
+  const dateSet = new Set();
 
-function minutesLabel(m) {
-  const h = Math.round(m / 60);
-  return hourLabelFromIndex(h);
-}
+  flights.forEach((f) => {
+    const when = toLocalDate(f.scheduledTime);
+    if (!when) return;
 
-function drawChart(svg, svgContainer, bins, key, currentMinutes) {
-  const margin = { top: 24, right: 16, bottom: 40, left: 40 };
-  const baseWidth = svgContainer.clientWidth || 800;
-  const width = baseWidth;
-  const height = 240;
+    const dateKey = torontoDateKey(when);
+    const hour = torontoHour(when);
+    if (hour < 0 || hour > 23) return;
 
-  svg.attr("width", width).attr("height", height);
-  svg.selectAll("*").remove();
-
-  const g = svg
-    .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
-
-  const innerWidth = width - margin.left - margin.right;
-  const innerHeight = height - margin.top - margin.bottom;
-
-  const hours = bins.map(d => d.hour);
-
-  const x0 = d3
-    .scaleBand()
-    .domain(hours)
-    .range([0, innerWidth])
-    .paddingInner(0.15);
-
-  const maxFlights =
-    d3.max(bins, d =>
-      key === "departures" ? d.flightsDep.length : d.flightsArr.length
-    ) || 0;
-
-  const y = d3
-    .scaleLinear()
-    .domain([0, Math.max(1, maxFlights)])
-    .nice()
-    .range([innerHeight, 0]);
-
-  const xAxis = d3
-    .axisBottom(x0)
-    .tickValues(hours)
-    .tickFormat(h => hourLabelFromIndex(h));
-
-  g
-    .append("g")
-    .attr("transform", `translate(0,${innerHeight})`)
-    .call(xAxis)
-    .call(g => g.selectAll(".tick line").attr("opacity", 0.3))
-    .call(g => g.select(".domain").attr("opacity", 0.4));
-
-  const yAxis = d3
-    .axisLeft(y)
-    .ticks(Math.min(4, maxFlights))
-    .tickFormat(d => (d === 0 ? "" : d));
-
-  g
-    .append("g")
-    .call(yAxis)
-    .call(g => g.selectAll(".tick line").attr("opacity", 0.15))
-    .call(g => g.select(".domain").attr("opacity", 0.4));
-
-  // Horizontal grid lines.
-  g
-    .append("g")
-    .attr("class", "grid-lines")
-    .selectAll("line")
-    .data(y.ticks(Math.min(4, maxFlights)))
-    .join("line")
-    .attr("x1", 0)
-    .attr("x2", innerWidth)
-    .attr("y1", d => y(d))
-    .attr("y2", d => y(d))
-    .attr("stroke", "#e2e8f0")
-    .attr("stroke-width", 0.7)
-    .attr("stroke-dasharray", "2,2");
-
-  // Current time marker if viewing "today".
-  if (currentMinutes != null) {
-    const hourIndex = Math.floor(currentMinutes / 60);
-    const minuteInHour = currentMinutes % 60;
-    const bandX = x0(hourIndex);
-    if (bandX != null) {
-      const bandWidth = x0.bandwidth();
-      const frac = minuteInHour / 60;
-      const xNow = bandX + bandWidth * frac;
-      g
-        .append("line")
-        .attr("x1", xNow)
-        .attr("x2", xNow)
-        .attr("y1", 0)
-        .attr("y2", innerHeight)
-        .attr("stroke", "#ff4d4f")
-        .attr("stroke-dasharray", "4,3")
-        .attr("stroke-width", 1.2);
+    dateSet.add(dateKey);
+    const mapKey = `${dateKey}|${hour}`;
+    if (!byDateHour.has(mapKey)) {
+      byDateHour.set(mapKey, {
+        dateKey,
+        hour,
+        total: 0,
+        departures: 0,
+        arrivals: 0,
+        airlines: new Set()
+      });
     }
+
+    const slot = byDateHour.get(mapKey);
+    slot.total += 1;
+    if (f.type === 'departure') slot.departures += 1;
+    if (f.type === 'arrival') slot.arrivals += 1;
+    if (f.airline) slot.airlines.add(f.airline);
+  });
+
+  const dates = Array.from(dateSet).sort(); // earliest at top
+  const cells = [];
+  dates.forEach((dateKey) => {
+    for (let hour = 0; hour < 24; hour++) {
+      const slot = byDateHour.get(`${dateKey}|${hour}`);
+      cells.push(
+        slot
+          ? slot
+          : {
+              dateKey,
+              hour,
+              total: 0,
+              departures: 0,
+              arrivals: 0,
+              airlines: new Set()
+            }
+      );
+    }
+  });
+
+  const maxTotal = d3.max(cells, (d) => d.total) || 0;
+  return { dates, cells, maxTotal };
+}
+
+function drawHeatmap(svg, container, heatmapData) {
+  const { dates, cells, maxTotal } = heatmapData;
+  svg.selectAll('*').remove();
+
+  if (!dates.length) {
+    return;
   }
 
+  const margin = { top: 26, right: 10, bottom: 14, left: 112 };
+  const cols = 24;
+  const gap = 3;
+
+  const baseWidth = container.clientWidth || 1000;
+  const usableWidth = Math.max(360, baseWidth - margin.left - margin.right);
+  const cellSize = Math.max(10, Math.floor((usableWidth - gap * (cols - 1)) / cols));
+  const gridWidth = cols * cellSize + (cols - 1) * gap;
+  const rows = dates.length;
+  const gridHeight = rows * cellSize + (rows - 1) * gap;
+
+  const width = margin.left + gridWidth + margin.right;
+  const height = margin.top + gridHeight + margin.bottom;
+
+  svg
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('preserveAspectRatio', 'xMinYMin meet')
+    .attr('width', '100%')
+    .attr('height', height);
+
+  const g = svg.append('g');
   const tooltipSel = d3.select(tooltip);
+  const today = torontoDateKey(new Date());
+  const currentHour = torontoHour(new Date());
 
-  const bandWidth = x0.bandwidth();
-  const barWidth = bandWidth * 0.6;
+  const color = d3
+    .scaleQuantize()
+    .domain([0, Math.max(1, maxTotal)])
+    .range(HEATMAP_COLORS);
 
-  const hourGroups = g
-    .selectAll(".hour-group")
-    .data(bins)
-    .join("g")
-    .attr("class", "hour-group")
-    .attr("transform", d => `translate(${x0(d.hour)},0)`);
+  // x-axis hour labels (00..23)
+  const hourLabels = d3.range(24).map((h) => String(h).padStart(2, '0'));
+  g
+    .selectAll('.heatmap-hour-label')
+    .data(hourLabels)
+    .join('text')
+    .attr('class', 'heatmap-axis-label heatmap-hour-label')
+    .attr('x', (_, i) => margin.left + i * (cellSize + gap) + cellSize / 2)
+    .attr('y', margin.top - 8)
+    .attr('text-anchor', 'middle')
+    .text((d) => d);
 
-  hourGroups.each(function (bin) {
-    const flights = key === "departures" ? bin.flightsDep : bin.flightsArr;
-    const group = d3.select(this);
-
-    flights.forEach((f, i) => {
-      const yBottom = y(i);
-      const yTop = y(i + 1);
-
-      group
-        .append("rect")
-        .attr("x", (bandWidth - barWidth) / 2)
-        .attr("y", yTop)
-        .attr("width", barWidth)
-        .attr("height", Math.max(0, yBottom - yTop))
-        .attr("rx", 2)
-        .attr("fill", statusColor(f.resolvedStatus))
-        .style("cursor", "pointer")
-        .on("mousemove", (event) => {
-          const local = toLocalDate(f.scheduledTime);
-          const timeStr = local.toLocaleTimeString("en-CA", {
-            hour: "numeric",
-            minute: "2-digit"
-          });
-          const kind = f.type === "departure" ? "Departs" : "Arrives";
-
-          const html = `
-            <div><strong>${f.flightNumber}</strong> · ${f.airline}</div>
-            <div>${kind} ${f.type === "departure" ? "to" : "from"} ${
-              f.otherAirport
-            } (${f.otherAirportCode})</div>
-            <div>${timeStr} · ${statusLabel(f.resolvedStatus)}</div>
-          `;
-
-          tooltipSel
-            .html(html)
-            .classed("hidden", false)
-            .style("left", `${event.clientX + 12}px`)
-            .style("top", `${event.clientY + 12}px`);
-        })
-        .on("mouseleave", () => {
-          tooltipSel.classed("hidden", true);
-        });
+  // y-axis date labels
+  g
+    .selectAll('.heatmap-date-label')
+    .data(dates)
+    .join('text')
+    .attr('class', 'heatmap-axis-label heatmap-date-label')
+    .attr('x', margin.left - 10)
+    .attr('y', (_, i) => margin.top + i * (cellSize + gap) + cellSize / 2 + 4)
+    .attr('text-anchor', 'end')
+    .style('font-weight', (d) => (d === today ? '700' : '400'))
+    .text((d) => {
+      const dateObj = new Date(`${d}T00:00:00`);
+      return dateObj.toLocaleDateString('en-CA', {
+        timeZone: 'America/Toronto',
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
     });
-  });
+
+  // Current hour column highlight
+  if (currentHour >= 0 && currentHour <= 23) {
+    const x = margin.left + currentHour * (cellSize + gap);
+    g
+      .append('rect')
+      .attr('x', x - 2)
+      .attr('y', margin.top - 2)
+      .attr('width', cellSize + 4)
+      .attr('height', gridHeight + 4)
+      .attr('rx', 5)
+      .attr('fill', 'none')
+      .attr('stroke', '#60a5fa')
+      .attr('stroke-width', 1.2)
+      .attr('opacity', 0.75);
+  }
+
+  g
+    .selectAll('.heatmap-cell')
+    .data(cells)
+    .join('rect')
+    .attr('class', 'heatmap-cell')
+    .attr('x', (d) => margin.left + d.hour * (cellSize + gap))
+    .attr('y', (d) => margin.top + dates.indexOf(d.dateKey) * (cellSize + gap))
+    .attr('width', cellSize)
+    .attr('height', cellSize)
+    .attr('rx', 4)
+    .attr('ry', 4)
+    .attr('fill', (d) => color(d.total))
+    .style('cursor', 'pointer')
+    .on('mousemove', (event, d) => {
+      const dateObj = new Date(`${d.dateKey}T00:00:00`);
+      const dateLabel = dateObj.toLocaleDateString('en-CA', {
+        timeZone: 'America/Toronto',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      const airlinesText = Array.from(d.airlines).sort().join(', ') || '—';
+
+      tooltipSel
+        .html(`
+          <div><strong>${dateLabel}</strong></div>
+          <div>Hour: ${String(d.hour).padStart(2, '0')}:00</div>
+          <div>Total flights: <strong>${d.total}</strong></div>
+          <div>Departures: ${d.departures} · Arrivals: ${d.arrivals}</div>
+          <div>Airlines: ${airlinesText}</div>
+        `)
+        .classed('hidden', false)
+        .style('left', `${event.clientX + 12}px`)
+        .style('top', `${event.clientY + 12}px`);
+    })
+    .on('mouseleave', () => {
+      tooltipSel.classed('hidden', true);
+    });
 }
 
 function pillClass(resolvedStatus) {
@@ -664,13 +639,6 @@ function renderForSelection() {
 
   const bins = buildBinsForDate(flightsForDate, currentDateKey);
 
-  // current hour marker only if viewing today
-  let currentHourIndex = null;
-  const now = new Date();
-  if (torontoDateKey(now) === currentDateKey) {
-    currentHourIndex = torontoHour(now);
-  }
-
   // peak bin across total flights
   peakBinGlobal = null;
   bins.forEach(b => {
@@ -679,16 +647,8 @@ function renderForSelection() {
     }
   });
 
-    let currentMinutes = null;
-    if (torontoDateKey(now) === currentDateKey) {
-      const nowLocal = new Date(
-        now.toLocaleString('en-CA', { timeZone: 'America/Toronto' })
-      );
-      currentMinutes = minutesSinceMidnight(nowLocal);
-    }
-
-    drawChart(svgDep, svgDepContainer, bins, 'departures', currentMinutes);
-    drawChart(svgArr, svgArrContainer, bins, 'arrivals', currentMinutes);
+  const heatmapData = buildHeatmapData(allFlights);
+  drawHeatmap(heatmapSvg, heatmapContainer, heatmapData);
 
   // selected date heading
   const d = new Date(`${currentDateKey}T00:00:00`);
@@ -759,7 +719,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', beforeUnload);
 }
 
-return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,staffBanner,metrics,chartCard,dateSelect,statusSelect,dateHeading,svgDep,svgArr,svgDepContainer,svgArrContainer,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,buildBinsForDate,colorByBusyness,statusColor,minutesSinceMidnight,minutesLabel,drawChart,pillClass,rowClass,statusLabel,allFlights,fetchedAt,todayKey,availableDateKeys,currentDateKey,currentStatusFilter,peakBinGlobal,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,renderTable,renderForSelection,applyNewData,refreshTimer};
+return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,staffBanner,metrics,chartCard,dateSelect,statusSelect,dateHeading,heatmapSvg,heatmapContainer,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,buildBinsForDate,HEATMAP_COLORS,buildHeatmapData,drawHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,todayKey,availableDateKeys,currentDateKey,currentStatusFilter,peakBinGlobal,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,renderTable,renderForSelection,applyNewData,refreshTimer};
 }});
 
 define({id: "c9eddbf6", inputs: ["data","display"], body: (data,display) => {
@@ -889,7 +849,7 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
     gap: 0.75rem;
     align-items: stretch;
     flex: 1 1 340px;
-    ````
+    flex-wrap: wrap;
     padding: 0.15em 0.6em;
     border-radius: 999px;
     font-size: 0.75rem;
@@ -930,12 +890,39 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   .dot-gray   { background: #9ca3af; }
   .dot-blue   { background: #6366f1; }
 
-  /* Busyness legend swatches */
-  .busyness-legend { display:flex; gap:0.6rem; align-items:center; margin-top:0.5rem }
-  .busyness-swatch { width:18px; height:12px; border-radius:3px; display:inline-block }
-  .bus-low { background: #bbf7d0 }
-  .bus-med { background: #fde68a }
-  .bus-high{ background: #fecaca }
+  .heatmap-container {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .heatmap-svg {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    color: #4b5563;
+  }
+
+  .heatmap-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    display: inline-block;
+    border: 1px solid #e5e7eb;
+  }
+
+  .heatmap-axis-label {
+    font-size: 0.72rem;
+    fill: #475569;
+  }
 
   .control-row {
     display: flex;
@@ -1014,13 +1001,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block"><!--:df90bfe7:--></div>
+<div class="observablehq observablehq--block"><!--:07dda0b4:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T02:44:23">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T13:57:41">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

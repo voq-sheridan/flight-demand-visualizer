@@ -52,14 +52,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.627a9780.json","lastModified":1774573287217,"size":13144});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.43afe94e.json","lastModified":1774573809319,"size":14797});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "dcc8ea7e", inputs: ["display","data"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","colorByBusyness","drawChart","ui","wrapper","staffBanner","metrics","chartCard","dateSelect","statusSelect","dateHeading","svgDep","svgArr","svgDepContainer","svgArrContainer","tooltip","tableContainer","formatTime","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (display,data) => {
+define({id: "0db80e74", inputs: ["display","data"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","colorByBusyness","drawChart","ui","wrapper","staffBanner","metrics","chartCard","dateSelect","statusSelect","dateHeading","svgDep","svgArr","svgDepContainer","svgArrContainer","tooltip","tableContainer","formatTime","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (display,data) => {
 const d3 = await import("./_npm/d3@7.9.0/66d82917.js");
 // Render live summary, busyness chart and auto-refresh (10 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
@@ -143,7 +143,8 @@ function buildUI() {
   // SVG containers for departures and arrivals
   const svgDepContainer = document.createElement('div');
   svgDepContainer.style.width = '100%';
-  svgDepContainer.style.overflow = 'hidden';
+  svgDepContainer.style.overflowX = 'auto';
+  svgDepContainer.style.overflowY = 'visible';
   svgDepContainer.style.marginBottom = '0.75rem';
 
   const depLabel = document.createElement('div');
@@ -155,7 +156,8 @@ function buildUI() {
 
   const svgArrContainer = document.createElement('div');
   svgArrContainer.style.width = '100%';
-  svgArrContainer.style.overflow = 'hidden';
+  svgArrContainer.style.overflowX = 'auto';
+  svgArrContainer.style.overflowY = 'visible';
 
   const arrLabel = document.createElement('div');
   arrLabel.className = 'chart-sub';
@@ -924,13 +926,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block"><!--:dcc8ea7e:--></div>
+<div class="observablehq observablehq--block"><!--:0db80e74:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T01:01:21">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T01:10:04">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

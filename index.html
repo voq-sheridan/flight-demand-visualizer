@@ -52,14 +52,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.7570ed83.json","lastModified":1774621095217,"size":44815});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.34ee13b2.json","lastModified":1774621278400,"size":44528});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "5bedd0d8", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","staffBanner","metrics","chartCard","dateSelect","statusSelect","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","HEATMAP_COLORS","torontoNowAsDate","getThreeDayKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
+define({id: "75a84333", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","staffBanner","metrics","chartCard","dateSelect","statusSelect","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","HEATMAP_COLORS","parseDateKey","shiftDateKey","getThreeDayKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
 const d3 = await import("./_npm/d3@7.9.0/66d82917.js");
 // Render live summary, busyness chart and auto-refresh (10 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
@@ -250,7 +250,16 @@ display(wrapper);
 
 // Time helpers in Toronto timezone
 function torontoDateKey(date) {
-  return date.toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Toronto',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const year = parts.find((p) => p.type === 'year')?.value;
+  const month = parts.find((p) => p.type === 'month')?.value;
+  const day = parts.find((p) => p.type === 'day')?.value;
+  return `${year}-${month}-${day}`;
 }
 
 function torontoHour(date) {
@@ -307,20 +316,26 @@ function buildBinsForDate(flights, dateKey) {
 
 const HEATMAP_COLORS = ['#f5f5f5', '#fecaca', '#f87171', '#ef4444', '#b91c1c'];
 
-function torontoNowAsDate() {
-  return new Date(new Date().toLocaleString('en-CA', { timeZone: 'America/Toronto' }));
+function parseDateKey(dateKey) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+}
+
+function shiftDateKey(dateKey, offsetDays) {
+  const dt = parseDateKey(dateKey);
+  dt.setUTCDate(dt.getUTCDate() + offsetDays);
+  const y = dt.getUTCFullYear();
+  const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(dt.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function getThreeDayKeys() {
-  const nowToronto = torontoNowAsDate();
-  const yesterday = new Date(nowToronto);
-  yesterday.setDate(nowToronto.getDate() - 1);
-  const tomorrow = new Date(nowToronto);
-  tomorrow.setDate(nowToronto.getDate() + 1);
+  const todayKey = torontoDateKey(new Date());
   return [
-    torontoDateKey(yesterday),
-    torontoDateKey(nowToronto),
-    torontoDateKey(tomorrow)
+    shiftDateKey(todayKey, -1),
+    todayKey,
+    shiftDateKey(todayKey, 1)
   ];
 }
 
@@ -404,9 +419,8 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   const g = svg.append('g');
   const tooltipSel = d3.select(tooltip);
 
-  const nowToronto = torontoNowAsDate();
-  const todayKey = torontoDateKey(nowToronto);
-  const currentHour = torontoHour(nowToronto);
+  const todayKey = torontoDateKey(new Date());
+  const currentHour = torontoHour(new Date());
   const todayRowIndex = dateKeys.indexOf(todayKey);
 
   const color = d3
@@ -436,9 +450,9 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('text-anchor', 'end')
     .style('font-weight', (_, i) => (i === 1 ? '700' : '400'))
     .text((d) => {
-      const dateObj = new Date(`${d}T00:00:00`);
+      const dateObj = parseDateKey(d);
       return dateObj.toLocaleDateString('en-CA', {
-        timeZone: 'America/Toronto',
+        timeZone: 'UTC',
         weekday: 'short',
         month: 'short',
         day: 'numeric'
@@ -475,9 +489,9 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('fill', (d) => color(d.total))
     .style('cursor', 'pointer')
     .on('mousemove', (event, d) => {
-      const dateObj = new Date(`${d.dateKey}T00:00:00`);
+      const dateObj = parseDateKey(d.dateKey);
       const dateLabel = dateObj.toLocaleDateString('en-CA', {
-        timeZone: 'America/Toronto',
+        timeZone: 'UTC',
         weekday: 'long',
         year: 'numeric',
         month: 'short',
@@ -767,7 +781,7 @@ if (typeof invalidation !== 'undefined') {
   });
 }
 
-return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,staffBanner,metrics,chartCard,dateSelect,statusSelect,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,buildBinsForDate,HEATMAP_COLORS,torontoNowAsDate,getThreeDayKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,todayKey,availableDateKeys,currentDateKey,currentStatusFilter,peakBinGlobal,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,renderTable,renderForSelection,applyNewData,refreshTimer};
+return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,staffBanner,metrics,chartCard,dateSelect,statusSelect,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,buildBinsForDate,HEATMAP_COLORS,parseDateKey,shiftDateKey,getThreeDayKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,todayKey,availableDateKeys,currentDateKey,currentStatusFilter,peakBinGlobal,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,renderTable,renderForSelection,applyNewData,refreshTimer};
 }});
 
 define({id: "c9eddbf6", inputs: ["data","display"], body: (data,display) => {
@@ -1056,13 +1070,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block"><!--:5bedd0d8:--></div>
+<div class="observablehq observablehq--block"><!--:75a84333:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T14:18:10">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T14:21:11">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

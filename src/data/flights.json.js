@@ -56,6 +56,8 @@ try {
     .filter((f) => withinNext24Hours(f.departure?.scheduled))
     .map((f) => ({
       type: "departure",
+      departureIata: f.departure?.iata || "",
+      arrivalIata: f.arrival?.iata || "",
       flightNumber: f.flight?.iata || f.flight?.icao || "N/A",
       airline: f.airline?.name || "Unknown Airline",
       otherAirport: f.arrival?.airport || "Unknown",
@@ -70,6 +72,8 @@ try {
     .filter((f) => withinNext24Hours(f.arrival?.scheduled))
     .map((f) => ({
       type: "arrival",
+      departureIata: f.departure?.iata || "",
+      arrivalIata: f.arrival?.iata || "",
       flightNumber: f.flight?.iata || f.flight?.icao || "N/A",
       airline: f.airline?.name || "Unknown Airline",
       otherAirport: f.departure?.airport || "Unknown",

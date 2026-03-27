@@ -52,14 +52,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.232bb501.json","lastModified":1774571118054,"size":16596});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.8029abf9.json","lastModified":1774571312438,"size":16596});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "6464a19e", inputs: ["display","data"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","computeHourlyBins","colorByBusyness","drawChart","wrapper","metrics","svg","svgContainer","renderFromSource","REFRESH_MS","refreshTimer"], body: async (display,data) => {
+define({id: "04beb233", inputs: ["display","data"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","computeHourlyBins","colorByBusyness","drawChart","wrapper","metrics","svg","svgContainer","renderFromSource","REFRESH_MS","refreshTimer"], body: async (display,data) => {
 const d3 = await import("./_npm/d3@7.9.0/66d82917.js");
 // Render live summary, busyness chart and auto-refresh (10 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
@@ -83,9 +83,9 @@ function buildUI() {
 
   // Metric cards
   const metrics = {
-    active: createMetricCard('Active', '—'),
-    delayed: createMetricCard('Delayed', '—'),
-    scheduled: createMetricCard('Scheduled', '—')
+    active: createMetricCard('Active', '—', 'metric-active-card'),
+    delayed: createMetricCard('Delayed', '—', 'metric-delayed-card'),
+    scheduled: createMetricCard('Scheduled', '—', 'metric-scheduled-card')
   };
 
   Object.values(metrics).forEach(c => summaryPanel.appendChild(c.card));
@@ -122,9 +122,10 @@ function buildUI() {
   return {wrapper, metrics, svg, svgContainer};
 }
 
-function createMetricCard(label, num) {
+function createMetricCard(label, num, variantClass) {
   const card = document.createElement('div');
   card.className = 'metric-card';
+  if (variantClass) card.classList.add(variantClass);
   const n = document.createElement('div'); n.className = 'metric-num'; n.textContent = num;
   const l = document.createElement('div'); l.className = 'metric-label'; l.textContent = label;
   card.appendChild(n); card.appendChild(l);
@@ -400,7 +401,6 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
     flex: 1 1 320px;
   }
   .metric-card {
-    background: #ffffff;
     border-radius: 8px;
     padding: 0.75rem 1rem;
     box-shadow: 0 1px 2px rgba(16,24,40,0.04);
@@ -408,6 +408,16 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
     flex-direction: column;
     justify-content: center;
     min-width: 140px;
+  }
+  /* Summary card variants */
+  .metric-active-card {
+    background: #dcfce7; /* green */
+  }
+  .metric-delayed-card {
+    background: #fef9c3; /* yellow */
+  }
+  .metric-scheduled-card {
+    background: #dbeafe; /* blue */
   }
   .metric-num {
     font-size: 1.5rem;
@@ -549,13 +559,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block"><!--:6464a19e:--></div>
+<div class="observablehq observablehq--block"><!--:04beb233:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T00:25:13">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T00:28:27">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

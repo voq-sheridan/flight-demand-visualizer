@@ -52,14 +52,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.e327d617.json","lastModified":1774622818818,"size":46752});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.e653404d.json","lastModified":1774623434161,"size":46232});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "2838e3b3", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","staffBanner","metrics","chartCard","dateSelect","statusSelect","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","HEATMAP_COLORS","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
+define({id: "96c9466b", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","staffBanner","metrics","chartCard","dateSelect","statusSelect","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","todayKey","availableDateKeys","currentDateKey","currentStatusFilter","peakBinGlobal","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","renderTable","renderForSelection","applyNewData","refreshTimer"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
 const d3 = await import("./_npm/d3@7.9.0/66d82917.js");
 // Render live summary, busyness chart and auto-refresh (10 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
@@ -166,16 +166,15 @@ function buildUI() {
     .append('svg')
     .attr('class', 'heatmap-svg');
 
-  // Heatmap legend (Less -> More)
+  // Heatmap legend (flight-count thresholds)
   const heatmapLegend = document.createElement('div');
   heatmapLegend.className = 'heatmap-legend';
   heatmapLegend.innerHTML = `
     <span>Less</span>
-    <span class="heatmap-swatch" style="background:#f5f5f5"></span>
-    <span class="heatmap-swatch" style="background:#fecaca"></span>
-    <span class="heatmap-swatch" style="background:#f87171"></span>
-    <span class="heatmap-swatch" style="background:#ef4444"></span>
-    <span class="heatmap-swatch" style="background:#b91c1c"></span>
+    <span class="heatmap-swatch" style="background:#f5f5f5" title="0 flights"></span>
+    <span class="heatmap-swatch" style="background:#fee0d2" title="1-10 flights"></span>
+    <span class="heatmap-swatch" style="background:#fc9272" title="11-20 flights"></span>
+    <span class="heatmap-swatch" style="background:#de2d26" title="21+ flights"></span>
     <span>More</span>`;
 
   // Tooltip for bars
@@ -314,7 +313,12 @@ function buildBinsForDate(flights, dateKey) {
   return bins;
 }
 
-const HEATMAP_COLORS = ['#f5f5f5', '#fecaca', '#f87171', '#ef4444', '#b91c1c'];
+function heatmapColor(total) {
+  if (total === 0) return '#f5f5f5';
+  if (total <= 10) return '#fee0d2';
+  if (total <= 20) return '#fc9272';
+  return '#de2d26';
+}
 
 function parseDateKey(dateKey) {
   const [y, m, d] = dateKey.split('-').map(Number);
@@ -423,11 +427,6 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   const currentHour = torontoHour(new Date());
   const todayRowIndex = dateKeys.indexOf(todayKey);
 
-  const color = d3
-    .scaleQuantize()
-    .domain([0, Math.max(1, sharedMax)])
-    .range(HEATMAP_COLORS);
-
   const rowIndexByKey = new Map(dateKeys.map((d, i) => [d, i]));
 
   g
@@ -486,7 +485,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('height', cellSize)
     .attr('rx', 4)
     .attr('ry', 4)
-    .attr('fill', (d) => color(d.total))
+  .attr('fill', (d) => heatmapColor(d.total))
     .style('cursor', 'pointer')
     .on('mousemove', (event, d) => {
       const dateObj = parseDateKey(d.dateKey);
@@ -781,7 +780,7 @@ if (typeof invalidation !== 'undefined') {
   });
 }
 
-return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,staffBanner,metrics,chartCard,dateSelect,statusSelect,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,buildBinsForDate,HEATMAP_COLORS,parseDateKey,shiftDateKey,getHeatmapDateKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,todayKey,availableDateKeys,currentDateKey,currentStatusFilter,peakBinGlobal,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,renderTable,renderForSelection,applyNewData,refreshTimer};
+return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,staffBanner,metrics,chartCard,dateSelect,statusSelect,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,buildBinsForDate,heatmapColor,parseDateKey,shiftDateKey,getHeatmapDateKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,todayKey,availableDateKeys,currentDateKey,currentStatusFilter,peakBinGlobal,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,renderTable,renderForSelection,applyNewData,refreshTimer};
 }});
 
 define({id: "c9eddbf6", inputs: ["data","display"], body: (data,display) => {
@@ -1070,13 +1069,13 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
-<div class="observablehq observablehq--block"><!--:2838e3b3:--></div>
+<div class="observablehq observablehq--block"><!--:96c9466b:--></div>
 <div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T14:46:52">Mar 27, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-27T14:57:08">Mar 27, 2026</a>.</div>
 </footer>
 </div>
 </body>

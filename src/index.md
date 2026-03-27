@@ -179,7 +179,7 @@ const data = await FileAttachment("data/flights.json").json();
 
 ```js
 // Render live summary, busyness chart and auto-refresh (10 minutes)
-const d3 = await import("https://cdn.jsdelivr.net/npm/d3@7?module");
+const {select, scaleBand, scaleLinear, max, axisBottom, axisLeft, format} = await import("https://cdn.jsdelivr.net/npm/d3@7?module");
 
 // Helper to safely parse times in Toronto timezone context
 function toLocalDate(iso) {
@@ -219,7 +219,7 @@ function buildUI() {
   const svgContainer = document.createElement('div');
   svgContainer.style.width = '100%';
   svgContainer.style.overflow = 'hidden';
-  const svg = d3.select(svgContainer).append('svg');
+  const svg = select(svgContainer).append('svg');
 
   // Busyness legend
   const busLegend = document.createElement('div');
@@ -290,9 +290,9 @@ function drawChart(svg, svgContainer, bins) {
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
 
-  const x0 = d3.scaleBand().domain(bins.map(d=>d.label)).range([0,w]).paddingInner(0.15);
-  const x1 = d3.scaleBand().domain(['departures','arrivals']).range([0,x0.bandwidth()]).padding(0.05);
-  const y = d3.scaleLinear().domain([0, d3.max(bins, d=>Math.max(d.departures,d.arrivals)) || 1]).nice().range([h,0]);
+  const x0 = scaleBand().domain(bins.map(d=>d.label)).range([0,w]).paddingInner(0.15);
+  const x1 = scaleBand().domain(['departures','arrivals']).range([0,x0.bandwidth()]).padding(0.05);
+  const y = scaleLinear().domain([0, max(bins, d=>Math.max(d.departures,d.arrivals)) || 1]).nice().range([h,0]);
 
   // compute tertiles for busyness across totals
   const totals = bins.map(d=>d.total).sort((a,b)=>a-b);
@@ -313,8 +313,8 @@ function drawChart(svg, svgContainer, bins) {
     .attr('stroke', '#00000000');
 
   // axes
-  const xAxis = d3.axisBottom(x0).tickValues(bins.filter((_,i)=> i%3===0).map(d=>d.label));
-  const yAxis = d3.axisLeft(y).ticks(4).tickFormat(d3.format('d'));
+  const xAxis = axisBottom(x0).tickValues(bins.filter((_,i)=> i%3===0).map(d=>d.label));
+  const yAxis = axisLeft(y).ticks(4).tickFormat(format('d'));
   g.append('g').attr('transform', `translate(0,${h})`).call(xAxis).selectAll('text').style('font-size','11px');
   g.append('g').call(yAxis).selectAll('text').style('font-size','11px');
 

@@ -264,7 +264,7 @@ function buildUI() {
   // Subtitle
   const sub = document.createElement('div');
   sub.className = 'chart-sub';
-  sub.textContent = 'GitHub-style heatmaps for yesterday, today, and tomorrow. Darker red indicates higher staffing pressure.';
+  sub.textContent = 'GitHub-style heatmaps for today and tomorrow. Darker red indicates higher staffing pressure.';
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';
@@ -456,10 +456,9 @@ function shiftDateKey(dateKey, offsetDays) {
   return `${y}-${m}-${d}`;
 }
 
-function getThreeDayKeys() {
+function getHeatmapDateKeys() {
   const todayKey = torontoDateKey(new Date());
   return [
-    shiftDateKey(todayKey, -1),
     todayKey,
     shiftDateKey(todayKey, 1)
   ];
@@ -530,7 +529,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   const usableWidth = Math.max(360, baseWidth - margin.left - margin.right);
   const cellSize = Math.max(10, Math.floor((usableWidth - gap * (cols - 1)) / cols));
   const gridWidth = cols * cellSize + (cols - 1) * gap;
-  const rows = 3;
+  const rows = dateKeys.length;
   const gridHeight = rows * cellSize + (rows - 1) * gap;
 
   const width = margin.left + gridWidth + margin.right;
@@ -574,7 +573,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('x', margin.left - 10)
     .attr('y', (_, i) => margin.top + i * (cellSize + gap) + cellSize / 2 + 4)
     .attr('text-anchor', 'end')
-    .style('font-weight', (_, i) => (i === 1 ? '700' : '400'))
+  .style('font-weight', (d) => (d === todayKey ? '700' : '400'))
     .text((d) => {
       const dateObj = parseDateKey(d);
       return dateObj.toLocaleDateString('en-CA', {
@@ -821,9 +820,9 @@ function renderForSelection() {
     }
   });
 
-  const threeDayKeys = getThreeDayKeys();
-  const depHeatmapData = buildDirectionalHeatmapData(allFlights, threeDayKeys, 'departures');
-  const arrHeatmapData = buildDirectionalHeatmapData(allFlights, threeDayKeys, 'arrivals');
+  const heatmapDateKeys = getHeatmapDateKeys();
+  const depHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'departures');
+  const arrHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'arrivals');
   const sharedMax = Math.max(depHeatmapData.maxTotal, arrHeatmapData.maxTotal);
 
   drawDirectionalHeatmap(depHeatmapSvg, depHeatmapContainer, depHeatmapData, sharedMax);

@@ -674,6 +674,7 @@ let countdownSpan = null;
 
 const REFRESH_MS = 10 * 60 * 1000;
 let nextRefreshAt = Date.now() + REFRESH_MS;
+let isPageActive = typeof document === 'undefined' ? true : document.visibilityState === 'visible';
 
 function recomputeDateOptions() {
   const keysSet = new Set();
@@ -735,6 +736,12 @@ function updateMeta(visibleCount) {
 
 function updateCountdown() {
   if (!countdownSpan || !nextRefreshAt) return;
+
+  if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+    countdownSpan.textContent = ' · Auto-refresh paused while tab inactive';
+    return;
+  }
+
   const now = Date.now();
   const remainingMs = Math.max(0, nextRefreshAt - now);
   const totalSec = Math.floor(remainingMs / 1000);
@@ -862,27 +869,17 @@ function applyNewData(srcData) {
 }
 
 async function fetchLatestFlightsData() {
+  // Use only the framework-resolved file URL to avoid any speculative 404 requests.
   const attachmentUrl = await FileAttachment("data/flights.json").url();
-  const candidateUrls = [
-    new URL('./data/flights.json', window.location.href).href,
-    new URL('data/flights.json', window.location.href).href,
-    new URL('/data/flights.json', window.location.origin).href,
-    attachmentUrl
-  ];
+  const url = attachmentUrl.includes('?')
+    ? `${attachmentUrl}&_=${Date.now()}`
+    : `${attachmentUrl}?_=${Date.now()}`;
 
-  for (const base of candidateUrls) {
-    try {
-      const url = base.includes('?') ? `${base}&_=${Date.now()}` : `${base}?_=${Date.now()}`;
-      const resp = await fetch(url, { cache: 'no-store' });
-      if (!resp.ok) continue;
-      return await resp.json();
-    } catch {
-      // try next candidate URL
-    }
+  const resp = await fetch(url, { cache: 'no-store' });
+  if (!resp.ok) {
+    throw new Error(`Refresh request failed with HTTP ${resp.status}`);
   }
-
-  // Last fallback to framework attachment read
-  return await FileAttachment("data/flights.json").json();
+  return await resp.json();
 }
 
 // Wire up controls
@@ -903,8 +900,9 @@ try {
   console.warn('Could not render chart initially', e);
 }
 
-// Auto-refresh every 10 minutes: attempt to fetch the JSON file and re-render if successful.
-const refreshTimer = setInterval(async () => {
+async function runRefreshCycle() {
+  if (!isPageActive) return;
+
   try {
     const json = await fetchLatestFlightsData();
     const incomingFetchedAt = json?.fetchedAt || null;
@@ -918,21 +916,42 @@ const refreshTimer = setInterval(async () => {
     ) {
       applyNewData(json);
     }
-
-    nextRefreshAt = Date.now() + REFRESH_MS;
   } catch (e) {
     // fallback: do nothing; keep showing current snapshot
     console.warn('Auto-refresh failed:', e);
+  } finally {
+    nextRefreshAt = Date.now() + REFRESH_MS;
   }
+}
+
+// Auto-refresh every 10 minutes when page is active.
+const refreshTimer = setInterval(() => {
+  void runRefreshCycle();
 }, REFRESH_MS);
+
+let onVisibilityChangeHandler = null;
+let beforeUnloadHandler = null;
 
 // Clean up on notebook disposal (if runtime provides a hook)
 if (typeof window !== 'undefined') {
-  const beforeUnload = () => {
+  onVisibilityChangeHandler = () => {
+    isPageActive = document.visibilityState === 'visible';
+    if (isPageActive) {
+      nextRefreshAt = Date.now() + REFRESH_MS;
+      void runRefreshCycle();
+    }
+  };
+
+  beforeUnloadHandler = () => {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
+    if (onVisibilityChangeHandler) {
+      window.removeEventListener('visibilitychange', onVisibilityChangeHandler);
+    }
   };
-  window.addEventListener('beforeunload', beforeUnload);
+
+  window.addEventListener('visibilitychange', onVisibilityChangeHandler);
+  window.addEventListener('beforeunload', beforeUnloadHandler);
 }
 
 // Observable runtime cleanup on cell re-evaluation (prevents duplicate stale timers / 404 fetches).
@@ -940,6 +959,14 @@ if (typeof invalidation !== 'undefined') {
   invalidation.then(() => {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
+    if (typeof window !== 'undefined') {
+      if (onVisibilityChangeHandler) {
+        window.removeEventListener('visibilitychange', onVisibilityChangeHandler);
+      }
+      if (beforeUnloadHandler) {
+        window.removeEventListener('beforeunload', beforeUnloadHandler);
+      }
+    }
   });
 }
 

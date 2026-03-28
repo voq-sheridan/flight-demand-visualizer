@@ -1301,7 +1301,6 @@ if (departuresPast12hAndNext6h.length === 0 && !data.error) {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
-    const label = statusLabel(f.resolvedStatus, f.status, f.delay);
     return `
       <tr class="${rowClass(f.resolvedStatus)}">
         <td><span class="badge badge-dep">DEP</span></td>
@@ -1309,7 +1308,6 @@ if (departuresPast12hAndNext6h.length === 0 && !data.error) {
         <td>${f.airline}</td>
         <td>${airport}</td>
         <td>${formatTime(f.scheduledTime)}</td>
-        <td><span class="status-pill ${pillClass(f.resolvedStatus)}">${label}</span></td>
       </tr>`;
   }).join("");
 
@@ -1323,7 +1321,6 @@ if (departuresPast12hAndNext6h.length === 0 && !data.error) {
         <th>Airline</th>
         <th>${"Destination"}</th>
         <th>Scheduled (ET)</th>
-        <th>Status</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>`;
@@ -1346,7 +1343,6 @@ if (arrivalsPast12hAndNext6h.length === 0 && !data.error) {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
-    const label = statusLabel(f.resolvedStatus, f.status, f.delay);
     return `
       <tr class="${rowClass(f.resolvedStatus)}">
         <td><span class="badge badge-arr">ARR</span></td>
@@ -1354,7 +1350,6 @@ if (arrivalsPast12hAndNext6h.length === 0 && !data.error) {
         <td>${f.airline}</td>
         <td>${airport}</td>
         <td>${formatTime(f.scheduledTime)}</td>
-        <td><span class="status-pill ${pillClass(f.resolvedStatus)}">${label}</span></td>
       </tr>`;
   }).join("");
 
@@ -1368,7 +1363,6 @@ if (arrivalsPast12hAndNext6h.length === 0 && !data.error) {
         <th>Airline</th>
         <th>${"Origin"}</th>
         <th>Scheduled (ET)</th>
-        <th>Status</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>`;

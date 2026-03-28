@@ -1263,7 +1263,21 @@ const departuresUntilEndOfToday = flights
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
+const arrivalsUntilEndOfToday = flights
+  .filter((f) => {
+    if (f.type !== "arrival") return false;
+    const when = new Date(f.scheduledTime);
+    if (Number.isNaN(when.getTime())) return false;
+    return when >= now && torontoDateKeyForList(when) === todayKeyForList;
+  })
+  .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
+
 if (departuresUntilEndOfToday.length === 0 && !data.error) {
+  const depHeading = document.createElement("div");
+  depHeading.className = "heatmap-section-title";
+  depHeading.textContent = "Departure List (Now → End of Today, ET · Best-effort OpenSky data)";
+  display(depHeading);
+
   const box = document.createElement("div");
   box.className = "empty-box";
   box.textContent = "No departure flights found from now until end of today (ET).";
@@ -1311,6 +1325,51 @@ if (departuresUntilEndOfToday.length === 0 && !data.error) {
     <tbody>${rows}</tbody>`;
   display(table);
 }
+
+const arrHeading = document.createElement("div");
+arrHeading.className = "heatmap-section-title";
+arrHeading.style.marginTop = "1rem";
+arrHeading.textContent = "Arrival List (Now → End of Today, ET · Best-effort OpenSky data)";
+display(arrHeading);
+
+if (arrivalsUntilEndOfToday.length === 0 && !data.error) {
+  const box = document.createElement("div");
+  box.className = "empty-box";
+  box.textContent = "No arrival flights found from now until end of today (ET).";
+  display(box);
+} else if (arrivalsUntilEndOfToday.length > 0) {
+  const rows = arrivalsUntilEndOfToday.map((f) => {
+    const airport = f.otherAirportCode
+      ? `${f.otherAirport} (${f.otherAirportCode})`
+      : f.otherAirport;
+    const label = statusLabel(f.resolvedStatus, f.status, f.delay);
+    return `
+      <tr class="${rowClass(f.resolvedStatus)}">
+        <td><span class="badge badge-arr">ARR</span></td>
+        <td><strong>${f.flightNumber}</strong></td>
+        <td>${f.airline}</td>
+        <td>${airport}</td>
+        <td>${formatTime(f.scheduledTime)}</td>
+        <td><span class="status-pill ${pillClass(f.resolvedStatus)}">${label}</span></td>
+      </tr>`;
+  }).join("");
+
+  const table = document.createElement("table");
+  table.className = "flight-board";
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Flight</th>
+        <th>Airline</th>
+        <th>${"Origin"}</th>
+        <th>Scheduled (ET)</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>`;
+  display(table);
+}
 ```
 
 ```js
@@ -1321,7 +1380,7 @@ if (data.fetchedAt) {
     timeZone: "America/Toronto",
     dateStyle: "medium",
     timeStyle: "short",
-  })} ET  ·  ${departuresUntilEndOfToday.length} departure flight${departuresUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
+  })} ET  ·  ${departuresUntilEndOfToday.length} departure flight${departuresUntilEndOfToday.length !== 1 ? "s" : ""} and ${arrivalsUntilEndOfToday.length} arrival flight${arrivalsUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
   display(meta);
 }
 ```

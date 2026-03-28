@@ -661,6 +661,7 @@ function statusLabel(resolvedStatus, rawStatus, delay) {
 
 let allFlights = data.flights ?? [];
 let fetchedAt = data.fetchedAt ? new Date(data.fetchedAt) : null;
+let lastFetchedAtIso = data.fetchedAt || null;
 const todayKey = torontoDateKey(new Date());
 let availableDateKeys = [];
 let currentDateKey = null;
@@ -855,8 +856,33 @@ function renderForSelection() {
 function applyNewData(srcData) {
   allFlights = srcData.flights ?? [];
   fetchedAt = srcData.fetchedAt ? new Date(srcData.fetchedAt) : null;
+  lastFetchedAtIso = srcData.fetchedAt || lastFetchedAtIso;
   recomputeDateOptions();
   renderForSelection();
+}
+
+async function fetchLatestFlightsData() {
+  const attachmentUrl = await FileAttachment("data/flights.json").url();
+  const candidateUrls = [
+    new URL('./data/flights.json', window.location.href).href,
+    new URL('data/flights.json', window.location.href).href,
+    new URL('/data/flights.json', window.location.origin).href,
+    attachmentUrl
+  ];
+
+  for (const base of candidateUrls) {
+    try {
+      const url = base.includes('?') ? `${base}&_=${Date.now()}` : `${base}?_=${Date.now()}`;
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) continue;
+      return await resp.json();
+    } catch {
+      // try next candidate URL
+    }
+  }
+
+  // Last fallback to framework attachment read
+  return await FileAttachment("data/flights.json").json();
 }
 
 // Wire up controls
@@ -880,8 +906,19 @@ try {
 // Auto-refresh every 10 minutes: attempt to fetch the JSON file and re-render if successful.
 const refreshTimer = setInterval(async () => {
   try {
-    const json = await FileAttachment("data/flights.json").json();
-    applyNewData(json);
+    const json = await fetchLatestFlightsData();
+    const incomingFetchedAt = json?.fetchedAt || null;
+
+    // Re-render if payload changed or timestamp is newer.
+    if (
+      !lastFetchedAtIso ||
+      !incomingFetchedAt ||
+      incomingFetchedAt !== lastFetchedAtIso ||
+      (json?.flights?.length ?? 0) !== allFlights.length
+    ) {
+      applyNewData(json);
+    }
+
     nextRefreshAt = Date.now() + REFRESH_MS;
   } catch (e) {
     // fallback: do nothing; keep showing current snapshot

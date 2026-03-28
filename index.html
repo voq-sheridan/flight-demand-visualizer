@@ -18,7 +18,7 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.d7c94af5.json","lastModified":1774736604521,"size":45349});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.5dbd5bfd.json","lastModified":1774737111155,"size":45624});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
@@ -970,7 +970,7 @@ if (data.error) {
 }
 }});
 
-define({id: "9344138b", inputs: ["data","display"], outputs: ["flights","torontoDateKeyForList","formatTime","pillClass","rowClass","statusLabel","now","past12Hours","next6Hours","departuresPast12hAndNext6h","arrivalsPast12hAndNext6h","listsWrap","createFlightListPanel"], body: (data,display) => {
+define({id: "f15563fb", inputs: ["data","display"], outputs: ["flights","torontoDateKeyForList","formatTime","pillClass","rowClass","statusLabel","now","past12Hours","next6Hours","departuresPast12hAndNext6h","arrivalsPast12hAndNext6h","listsWrap","createFlightListPanel"], body: (data,display) => {
 const flights = data.flights ?? [];
 
 function torontoDateKeyForList(date) {
@@ -1050,6 +1050,7 @@ listsWrap.className = "list-panels";
 function createFlightListPanel({
   title,
   flights,
+  flightLabel,
   typeBadge,
   locationHeader,
   emptyText,
@@ -1068,18 +1069,31 @@ function createFlightListPanel({
   const toggleBtn = document.createElement("button");
   toggleBtn.type = "button";
   toggleBtn.className = "list-toggle-btn";
-  toggleBtn.textContent = "Hide list";
+  toggleBtn.textContent = "Show list";
 
   header.appendChild(heading);
   header.appendChild(toggleBtn);
 
   const body = document.createElement("div");
   body.className = "list-panel-body";
+  body.classList.add("collapsed");
+
+  if (data.fetchedAt) {
+    const panelMeta = document.createElement("div");
+    panelMeta.className = "meta";
+    panelMeta.style.marginTop = "0";
+    panelMeta.textContent = `Last updated: ${new Date(data.fetchedAt).toLocaleString("en-CA", {
+      timeZone: "America/Toronto",
+      dateStyle: "medium",
+      timeStyle: "short",
+    })} ET  ·  ${flights.length} ${flightLabel} flight${flights.length !== 1 ? "s" : ""} shown`;
+    body.appendChild(panelMeta);
+  }
 
   if (includeHint) {
     const hint = document.createElement("div");
     hint.className = "meta";
-    hint.style.marginTop = "0";
+    hint.style.marginTop = "0.35rem";
     hint.textContent = "This list shows all flights currently available in the feed. Check constantly for new flight updates";
     body.appendChild(hint);
   }
@@ -1134,6 +1148,7 @@ listsWrap.appendChild(
   createFlightListPanel({
     title: "Departure List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET)",
     flights: departuresPast12hAndNext6h,
+    flightLabel: "departure",
     typeBadge: "dep",
     locationHeader: "Destination",
     emptyText: "No departure flights found in the past 12 hours or in the next 6 hours (ET).",
@@ -1145,6 +1160,7 @@ listsWrap.appendChild(
   createFlightListPanel({
     title: "Arrival List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET)",
     flights: arrivalsPast12hAndNext6h,
+    flightLabel: "arrival",
     typeBadge: "arr",
     locationHeader: "Origin",
     emptyText: "No arrival flights found in the past 12 hours or in the next 6 hours (ET).",
@@ -1154,19 +1170,6 @@ listsWrap.appendChild(
 
 display(listsWrap);
 return {flights,torontoDateKeyForList,formatTime,pillClass,rowClass,statusLabel,now,past12Hours,next6Hours,departuresPast12hAndNext6h,arrivalsPast12hAndNext6h,listsWrap,createFlightListPanel};
-}});
-
-define({id: "553e3ce5", inputs: ["data","departuresPast12hAndNext6h","arrivalsPast12hAndNext6h","display"], body: (data,departuresPast12hAndNext6h,arrivalsPast12hAndNext6h,display) => {
-if (data.fetchedAt) {
-  const meta = document.createElement("p");
-  meta.className = "meta";
-  meta.textContent = `Last updated: ${new Date(data.fetchedAt).toLocaleString("en-CA", {
-    timeZone: "America/Toronto",
-    dateStyle: "medium",
-    timeStyle: "short",
-  })} ET  ·  ${departuresPast12hAndNext6h.length} departure flight${departuresPast12hAndNext6h.length !== 1 ? "s" : ""} and ${arrivalsPast12hAndNext6h.length} arrival flight${arrivalsPast12hAndNext6h.length !== 1 ? "s" : ""} shown`;
-  display(meta);
-}
 }});
 
 </script>
@@ -1474,11 +1477,10 @@ Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="no
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
 <div class="observablehq observablehq--block"><!--:26734b74:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
-<div class="observablehq observablehq--block"><!--:9344138b:--></div>
-<div class="observablehq observablehq--block"><!--:553e3ce5:--></div>
+<div class="observablehq observablehq--block"><!--:f15563fb:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T22:23:17">Mar 28, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T22:31:41">Mar 28, 2026</a>.</div>
 </footer>
 </div>
 </body>

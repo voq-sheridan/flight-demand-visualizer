@@ -7,6 +7,8 @@ title: Toronto Pearson Airport — Flight Activity
 Live and upcoming flights for the next 24 hours (departures and arrivals).  
 Data sourced from [OpenSky Network](https://opensky-network.org/).
 
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+
 <style>
   /* Layout */
   .top-row {

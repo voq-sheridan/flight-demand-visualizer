@@ -7,6 +7,18 @@ dist/
 
 # Environment variables
 .env
+.env.*
+!.env.example
+
+# Local credentials / secrets
+credentials.json
+credentials*.json
+*.pem
+*.p12
+*.pfx
+*.key
+*.crt
+*.cer
 
 # OS artifacts
 .DS_Store

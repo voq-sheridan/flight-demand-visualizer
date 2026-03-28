@@ -106,7 +106,7 @@ function toIso(ts) {
 
 function inferTypeFromState(state) {
   const onGround = Boolean(state?.[8]);
-  if (onGround) return null;
+  if (onGround) return 'arrival';
 
   const verticalRate = state?.[11];
   if (Number.isFinite(verticalRate)) {
@@ -124,10 +124,10 @@ function inferTypeFromState(state) {
 
 async function fetchStatesFallback(unixNow) {
   const bbox = new URLSearchParams({
-    lamin: '43.4',
-    lomin: '-79.9',
-    lamax: '44.1',
-    lomax: '-78.9'
+    lamin: '43.0',
+    lomin: '-80.6',
+    lamax: '44.6',
+    lomax: '-78.2'
   });
 
   const url = `${OPEN_SKY_BASE}/states/all?${bbox}`;
@@ -200,7 +200,7 @@ async function fetchStatesFallback(unixNow) {
         const scheduledTime = toIso(projectedTs);
         if (!scheduledTime) return null;
 
-        const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
+  const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
         return {
           dedupeKey: `${icao24 || 'unknown'}|${projectedTs || 'unknown'}`,
           flight: {
@@ -255,6 +255,11 @@ async function fetchEndpoint(url, label) {
 async function fetchAirportFlightsWithWindowFallback(endpoint, label, unixNow) {
   const endpointName = endpoint === 'departure' ? 'departures' : 'arrivals';
   const candidates = [
+    // Additional historical ranges to recover more records when endpoint behavior is inconsistent.
+    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 48 * 3600}&end=${unixNow}`,
+    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 48 * 3600}&end=${unixNow}`,
+    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 24 * 3600}&end=${unixNow}`,
+    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 24 * 3600}&end=${unixNow}`,
     // Include historical window for heatmap context (past 12h).
     `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow}`,
     `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow}`,
@@ -287,8 +292,8 @@ async function fetchAirportFlightsWithWindowFallback(endpoint, label, unixNow) {
 }
 
 function keepRollingWindowFlights(flights, unixNow) {
-  const startMs = (unixNow - 12 * 3600) * 1000;
-  const endMs = (unixNow + 72 * 3600) * 1000;
+  const startMs = (unixNow - 24 * 3600) * 1000;
+  const endMs = (unixNow + 96 * 3600) * 1000;
   return flights.filter((f) => {
     const ts = Date.parse(f.scheduledTime);
     return Number.isFinite(ts) && ts >= startMs && ts <= endMs;
@@ -297,22 +302,24 @@ function keepRollingWindowFlights(flights, unixNow) {
 
 function mapDeparture(raw) {
   const callsign = (raw?.callsign || '').trim();
+  const icao24 = String(raw?.icao24 || '').trim();
+  const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
   const baseTs = Number.isFinite(raw?.firstSeen) ? raw.firstSeen : raw?.lastSeen;
   const firstSeenIso = toIso(baseTs);
   const lastSeenIso = toIso(raw?.lastSeen);
-  if (!callsign || !firstSeenIso) return null;
+  if (!firstSeenIso) return null;
 
   return {
-    dedupeKey: `${raw?.icao24 || 'unknown'}|${baseTs || 'unknown'}`,
+    dedupeKey: `${icao24 || 'unknown'}|${baseTs || 'unknown'}`,
     flight: {
       type: 'departure',
-      flightNumber: callsign,
-      airline: deriveAirlineName(callsign),
+      flightNumber,
+      airline: deriveAirlineName(flightNumber),
       otherAirport: raw?.estArrivalAirport || 'Unknown',
       otherAirportCode: raw?.estArrivalAirport || 'N/A',
       scheduledTime: firstSeenIso,
       lastSeen: lastSeenIso,
-      icao24: raw?.icao24 || '',
+      icao24,
       delay: 0,
       status: 'active',
       resolvedStatus: 'active'
@@ -322,22 +329,24 @@ function mapDeparture(raw) {
 
 function mapArrival(raw) {
   const callsign = (raw?.callsign || '').trim();
+  const icao24 = String(raw?.icao24 || '').trim();
+  const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
   const firstSeenIso = toIso(raw?.firstSeen);
   const baseTs = Number.isFinite(raw?.lastSeen) ? raw.lastSeen : raw?.firstSeen;
   const lastSeenIso = toIso(baseTs);
-  if (!callsign || !lastSeenIso) return null;
+  if (!lastSeenIso) return null;
 
   return {
-    dedupeKey: `${raw?.icao24 || 'unknown'}|${raw?.firstSeen || baseTs || 'unknown'}`,
+    dedupeKey: `${icao24 || 'unknown'}|${raw?.firstSeen || baseTs || 'unknown'}`,
     flight: {
       type: 'arrival',
-      flightNumber: callsign,
-      airline: deriveAirlineName(callsign),
+      flightNumber,
+      airline: deriveAirlineName(flightNumber),
       otherAirport: raw?.estDepartureAirport || 'Unknown',
       otherAirportCode: raw?.estDepartureAirport || 'N/A',
       scheduledTime: lastSeenIso,
       firstSeen: firstSeenIso,
-      icao24: raw?.icao24 || '',
+      icao24,
       delay: 0,
       status: 'active',
       resolvedStatus: 'active'

@@ -124,14 +124,8 @@ Data sourced from [AviationStack](https://aviationstack.com/).
     font-size: 0.85rem;
   }
 
-  .staff-insights {
-    margin-top: 0.65rem;
-    display: grid;
-    gap: 0.55rem;
-    width: 100%;
-  }
-
   .staff-insight-box {
+    margin-top: 0.45rem;
     border: 2px solid #60a5fa;
     border-radius: 10px;
     background: #eff6ff;
@@ -155,6 +149,17 @@ Data sourced from [AviationStack](https://aviationstack.com/).
   .staff-insight-box li {
     margin: 0.25rem 0;
     line-height: 1.35;
+  }
+
+  .staff-insight-badge {
+    display: inline-block;
+    margin: 0.35rem 0 0.15rem;
+    padding: 0.14rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    background: rgba(255, 255, 255, 0.55);
   }
 
   .staff-state-upcoming {
@@ -269,21 +274,13 @@ function buildUI() {
   };
   Object.values(metrics).forEach(c => summaryPanel.appendChild(c.card));
 
-  // Staffing recommendation advisories (below summary cards)
-  const staffingInsights = document.createElement('div');
-  staffingInsights.className = 'staff-insights';
-
   const departureInsightBox = document.createElement('div');
   departureInsightBox.className = 'staff-insight-box staff-state-upcoming';
-  departureInsightBox.innerHTML = '<h4>🛫 Departure Staffing Advisory</h4><div>Loading departure staffing insight…</div>';
+  departureInsightBox.innerHTML = '<h4>🛫 Departure Staffing Advisory</h4><div class="staff-insight-badge">⏳ Upcoming — Prep window</div><div>Loading departure staffing insight…</div>';
 
   const arrivalInsightBox = document.createElement('div');
   arrivalInsightBox.className = 'staff-insight-box staff-state-upcoming';
-  arrivalInsightBox.innerHTML = '<h4>🛬 Arrival Staffing Advisory</h4><div>Loading arrival staffing insight…</div>';
-
-  staffingInsights.appendChild(departureInsightBox);
-  staffingInsights.appendChild(arrivalInsightBox);
-  summaryPanel.appendChild(staffingInsights);
+  arrivalInsightBox.innerHTML = '<h4>🛬 Arrival Staffing Advisory</h4><div class="staff-insight-badge">⏳ Upcoming — Prep window</div><div>Loading arrival staffing insight…</div>';
 
   // Chart title
   const title = document.createElement('div');
@@ -345,8 +342,10 @@ function buildUI() {
   chartCard.appendChild(sub);
   chartCard.appendChild(depHeatmapTitle);
   chartCard.appendChild(depHeatmapContainer);
+  chartCard.appendChild(departureInsightBox);
   chartCard.appendChild(arrHeatmapTitle);
   chartCard.appendChild(arrHeatmapContainer);
+  chartCard.appendChild(arrivalInsightBox);
   chartCard.appendChild(heatmapLegend);
   chartCard.appendChild(tooltip);
 
@@ -503,7 +502,10 @@ function renderDepartureInsightBox(box, flights) {
     applyInsightState(
       box,
       'staff-state-low',
-      '<h4>🛫 Departure Staffing Advisory</h4><div><strong>Departure demand is low — standard staffing levels are sufficient.</strong></div>'
+      `
+        <h4>🛫 Departure Staffing Advisory</h4>
+        <div class="staff-insight-badge"><strong>✓ Low Demand — Standard staffing</strong></div>
+      `
     );
     return;
   }
@@ -518,16 +520,19 @@ function renderDepartureInsightBox(box, flights) {
     applyInsightState(
       box,
       'staff-state-passed',
-      '<h4>🛫 Departure Staffing Advisory</h4><div><strong>Today\'s peak departure window has passed — monitor tomorrow\'s schedule.</strong></div>'
+      `
+        <h4>🛫 Departure Staffing Advisory</h4>
+        <div class="staff-insight-badge"><strong>✓ Peak Passed — Monitor tomorrow</strong></div>
+      `
     );
     return;
   }
 
   const isActive = nowMinutes >= prepStart && nowMinutes < peakStart;
   const stateClass = isActive ? 'staff-state-active-departure' : 'staff-state-upcoming';
-  const header = isActive
-    ? '<h4><strong>Preparation window is now active — deploy staff immediately.</strong></h4>'
-    : '<h4>🛫 Departure Staffing Advisory</h4>';
+  const badgeLabel = isActive
+    ? '⚠ Active Now — Deploy Staff'
+    : '⏳ Upcoming — Prep window';
 
   const peakHourLabel = formatClockFromMinutes(peakStart);
   const prepStartLabel = formatClockFromMinutes(prepStart);
@@ -538,11 +543,12 @@ function renderDepartureInsightBox(box, flights) {
     box,
     stateClass,
     `
-      ${header}
+      <h4>🛫 Departure Staffing Advisory</h4>
+      <div class="staff-insight-badge"><strong>${badgeLabel}</strong></div>
       <ul>
-        <li>TSA Security Screening — Allocate additional screening staff from <strong>${prepStartLabel}</strong> to <strong>${prepEndLabel}</strong>. Peak departure expected at <strong>${peakHourLabel}</strong> with <strong>${peakTotal}</strong> flights.</li>
-        <li>Gate Agents and Ground Crew — Deploy staff to assigned gates by <strong>${deployByLabel}</strong>. Coordinate with airlines for <strong>${peakTotal}</strong> departing flights.</li>
-        <li>Check-in Counters — Open additional counters from <strong>${prepStartLabel}</strong> to handle passenger check-in volume before peak departure at <strong>${peakHourLabel}</strong>.</li>
+        <li>TSA Screening — <strong>Staff up ${prepStartLabel}–${prepEndLabel}</strong> (<strong>${peakTotal}</strong> flights at <strong>${peakHourLabel}</strong> peak)</li>
+        <li>Gate & Ground Crew — <strong>Deploy by ${deployByLabel}</strong> for <strong>${peakTotal}</strong> departures</li>
+        <li>Check-in Counters — <strong>Open ${prepStartLabel}–${peakHourLabel}</strong> for peak flow (<strong>${peakTotal}</strong> flights)</li>
       </ul>
     `
   );
@@ -554,7 +560,10 @@ function renderArrivalInsightBox(box, flights) {
     applyInsightState(
       box,
       'staff-state-low',
-      '<h4>🛬 Arrival Staffing Advisory</h4><div><strong>Arrival demand is low — standard staffing levels are sufficient.</strong></div>'
+      `
+        <h4>🛬 Arrival Staffing Advisory</h4>
+        <div class="staff-insight-badge"><strong>✓ Low Demand — Standard staffing</strong></div>
+      `
     );
     return;
   }
@@ -569,16 +578,19 @@ function renderArrivalInsightBox(box, flights) {
     applyInsightState(
       box,
       'staff-state-passed',
-      '<h4>🛬 Arrival Staffing Advisory</h4><div><strong>Today\'s peak arrival window has passed — monitor tomorrow\'s schedule.</strong></div>'
+      `
+        <h4>🛬 Arrival Staffing Advisory</h4>
+        <div class="staff-insight-badge"><strong>✓ Peak Passed — Monitor tomorrow</strong></div>
+      `
     );
     return;
   }
 
   const isActive = nowMinutes >= peakStart && nowMinutes <= coverageEnd;
   const stateClass = isActive ? 'staff-state-active-arrival' : 'staff-state-upcoming';
-  const header = isActive
-    ? '<h4><strong>Active arrival peak window — all arrival services must be at full capacity now.</strong></h4>'
-    : '<h4>🛬 Arrival Staffing Advisory</h4>';
+  const badgeLabel = isActive
+    ? '⚠ Active Now — Deploy Staff'
+    : '⏳ Upcoming — Prep window';
 
   const peakHourLabel = formatClockFromMinutes(peakStart);
   const coverageEndLabel = formatClockFromMinutes(coverageEnd);
@@ -589,11 +601,12 @@ function renderArrivalInsightBox(box, flights) {
     box,
     stateClass,
     `
-      ${header}
+      <h4>🛬 Arrival Staffing Advisory</h4>
+      <div class="staff-insight-badge"><strong>${badgeLabel}</strong></div>
       <ul>
-        <li>Baggage Claim — Staff all active carousels from <strong>${peakHourLabel}</strong> to <strong>${coverageEndLabel}</strong>. Peak arrival expected at <strong>${peakHourLabel}</strong> with <strong>${peakTotal}</strong> flights.</li>
-        <li>Immigration and Border Services — Increase officer capacity from <strong>${peakHourLabel}</strong> through <strong>${borderEndLabel}</strong> to process incoming international passengers.</li>
-        <li>Customs and Exit Lanes — Maintain full capacity from <strong>${exitStartLabel}</strong> to <strong>${coverageEndLabel}</strong> as passengers clear immigration and collect baggage.</li>
+        <li>Baggage Claim — <strong>Staff up ${peakHourLabel}–${coverageEndLabel}</strong> (<strong>${peakTotal}</strong> flights at <strong>${peakHourLabel}</strong> peak)</li>
+        <li>Immigration — <strong>Increase ${peakHourLabel}–${borderEndLabel}</strong> for incoming flow</li>
+        <li>Customs & Exit Lanes — <strong>Maintain ${exitStartLabel}–${coverageEndLabel}</strong> for arrivals clearing</li>
       </ul>
     `
   );

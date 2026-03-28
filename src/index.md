@@ -882,6 +882,7 @@ let countdownSpan = null;
 const REFRESH_MS = 10 * 60 * 1000;
 let nextRefreshAt = Date.now() + REFRESH_MS;
 let isPageActive = typeof document === 'undefined' ? true : document.visibilityState === 'visible';
+let refreshNeedsReload = false;
 
 function recomputeDateOptions() {
   const todayDateKey = torontoDateKey(new Date());
@@ -929,6 +930,11 @@ function updateMeta(visibleCount) {
 
 function updateCountdown() {
   if (!countdownSpan || !nextRefreshAt) return;
+
+  if (refreshNeedsReload) {
+    countdownSpan.textContent = ' · Auto-refresh paused (new deployment detected — reload page)';
+    return;
+  }
 
   if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
     countdownSpan.textContent = ' · Auto-refresh paused while tab inactive';
@@ -1059,6 +1065,9 @@ async function fetchLatestFlightsData() {
     : `${attachmentUrl}?_=${Date.now()}`;
 
   const resp = await fetch(url, { cache: 'no-store' });
+  if (resp.status === 404) {
+    return null;
+  }
   if (!resp.ok) {
     throw new Error(`Refresh request failed with HTTP ${resp.status}`);
   }
@@ -1073,10 +1082,15 @@ try {
 }
 
 async function runRefreshCycle() {
-  if (!isPageActive) return;
+  if (!isPageActive || refreshNeedsReload) return;
 
   try {
     const json = await fetchLatestFlightsData();
+    if (!json) {
+      refreshNeedsReload = true;
+      updateCountdown();
+      return;
+    }
     const incomingFetchedAt = json?.fetchedAt || null;
 
     // Re-render if payload changed or timestamp is newer.

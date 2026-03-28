@@ -324,7 +324,7 @@ function buildUI() {
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';
-  depHeatmapTitle.textContent = 'Departures by Hour (Today, ET)';
+  depHeatmapTitle.textContent = 'Departures by Hour (Today, ET · Live (Current time))';
 
   const depHeatmapContainer = document.createElement('div');
   depHeatmapContainer.className = 'heatmap-container';
@@ -337,7 +337,7 @@ function buildUI() {
 
   const arrHeatmapTitle = document.createElement('div');
   arrHeatmapTitle.className = 'heatmap-section-title';
-  arrHeatmapTitle.textContent = 'Arrivals by Hour';
+  arrHeatmapTitle.textContent = 'Arrivals by Hour (Today, ET · Live (Current time))';
 
   const arrHeatmapContainer = document.createElement('div');
   arrHeatmapContainer.className = 'heatmap-container';
@@ -1052,10 +1052,9 @@ function renderForSelection() {
   metrics.scheduled.set(totalScheduled);
   metrics.total.set(totalFlights);
 
-  const heatmapDateKeys = getHeatmapDateKeys();
   const todayHeatmapKey = torontoDateKey(new Date());
   const depHeatmapData = buildDirectionalHeatmapData(allFlights, [todayHeatmapKey], 'departures');
-  const arrHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'arrivals');
+  const arrHeatmapData = buildDirectionalHeatmapData(allFlights, [todayHeatmapKey], 'arrivals');
   const sharedMax = Math.max(depHeatmapData.maxTotal, arrHeatmapData.maxTotal);
 
   drawDirectionalHeatmap(depHeatmapSvg, depHeatmapContainer, depHeatmapData, sharedMax);
@@ -1275,7 +1274,7 @@ const arrivalsUntilEndOfToday = flights
 if (departuresUntilEndOfToday.length === 0 && !data.error) {
   const depHeading = document.createElement("div");
   depHeading.className = "heatmap-section-title";
-  depHeading.textContent = "Departure List (Now → End of Today, ET · Best-effort OpenSky data)";
+  depHeading.textContent = "Departure List (Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
   display(depHeading);
 
   const box = document.createElement("div");
@@ -1285,7 +1284,7 @@ if (departuresUntilEndOfToday.length === 0 && !data.error) {
 } else if (departuresUntilEndOfToday.length > 0) {
   const heading = document.createElement("div");
   heading.className = "heatmap-section-title";
-  heading.textContent = "Departure List (Now → End of Today, ET · Best-effort OpenSky data)";
+  heading.textContent = "Departure List (Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
   display(heading);
 
   const hint = document.createElement("div");
@@ -1329,7 +1328,7 @@ if (departuresUntilEndOfToday.length === 0 && !data.error) {
 const arrHeading = document.createElement("div");
 arrHeading.className = "heatmap-section-title";
 arrHeading.style.marginTop = "1rem";
-arrHeading.textContent = "Arrival List (Now → End of Today, ET · Best-effort OpenSky data)";
+arrHeading.textContent = "Arrival List (Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
 display(arrHeading);
 
 if (arrivalsUntilEndOfToday.length === 0 && !data.error) {

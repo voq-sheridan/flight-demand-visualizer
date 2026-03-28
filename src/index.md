@@ -1254,12 +1254,14 @@ function statusLabel(resolvedStatus, rawStatus, delay) {
 const now = new Date();
 const past12Hours = new Date(now.getTime() - 12 * 60 * 60 * 1000);
 const todayKeyForList = torontoDateKeyForList(now);
-const departuresUntilEndOfToday = flights
+const departuresPast12hAndUntilEndOfToday = flights
   .filter((f) => {
     if (f.type !== "departure") return false;
     const when = new Date(f.scheduledTime);
     if (Number.isNaN(when.getTime())) return false;
-    return when >= now && torontoDateKeyForList(when) === todayKeyForList;
+    const isPast12h = when >= past12Hours && when <= now;
+    const isUpcomingToday = when >= now && torontoDateKeyForList(when) === todayKeyForList;
+    return isPast12h || isUpcomingToday;
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
@@ -1274,20 +1276,20 @@ const arrivalsPast12hAndUntilEndOfToday = flights
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
-if (departuresUntilEndOfToday.length === 0 && !data.error) {
+if (departuresPast12hAndUntilEndOfToday.length === 0 && !data.error) {
   const depHeading = document.createElement("div");
   depHeading.className = "heatmap-section-title";
-  depHeading.textContent = "Departure List (Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
+  depHeading.textContent = "Departure List (Past 12 Hours + Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
   display(depHeading);
 
   const box = document.createElement("div");
   box.className = "empty-box";
-  box.textContent = "No departure flights found from now until end of today (ET).";
+  box.textContent = "No departure flights found in the past 12 hours or from now until end of today (ET).";
   display(box);
-} else if (departuresUntilEndOfToday.length > 0) {
+} else if (departuresPast12hAndUntilEndOfToday.length > 0) {
   const heading = document.createElement("div");
   heading.className = "heatmap-section-title";
-  heading.textContent = "Departure List (Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
+  heading.textContent = "Departure List (Past 12 Hours + Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
   display(heading);
 
   const hint = document.createElement("div");
@@ -1295,7 +1297,7 @@ if (departuresUntilEndOfToday.length === 0 && !data.error) {
   hint.textContent = "OpenSky does not guarantee a complete future timetable; this list shows all departures currently available in the feed.";
   display(hint);
 
-  const rows = departuresUntilEndOfToday.map((f) => {
+  const rows = departuresPast12hAndUntilEndOfToday.map((f) => {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
@@ -1382,7 +1384,7 @@ if (data.fetchedAt) {
     timeZone: "America/Toronto",
     dateStyle: "medium",
     timeStyle: "short",
-  })} ET  ·  ${departuresUntilEndOfToday.length} departure flight${departuresUntilEndOfToday.length !== 1 ? "s" : ""} and ${arrivalsPast12hAndUntilEndOfToday.length} arrival flight${arrivalsPast12hAndUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
+  })} ET  ·  ${departuresPast12hAndUntilEndOfToday.length} departure flight${departuresPast12hAndUntilEndOfToday.length !== 1 ? "s" : ""} and ${arrivalsPast12hAndUntilEndOfToday.length} arrival flight${arrivalsPast12hAndUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
   display(meta);
 }
 ```

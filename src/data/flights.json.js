@@ -104,6 +104,25 @@ function toIso(ts) {
   return new Date(ts * 1000).toISOString();
 }
 
+function deriveResolvedStatus(type, scheduledIso, unixNow, options = {}) {
+  const ts = Date.parse(scheduledIso);
+  if (!Number.isFinite(ts)) return 'active';
+
+  const nowMs = unixNow * 1000;
+  const onGround = Boolean(options?.onGround);
+
+  // Best-effort status derivation because OpenSky does not provide airline schedule statuses.
+  if (type === 'arrival' && (onGround || ts <= nowMs + 10 * 60 * 1000)) {
+    return 'landed';
+  }
+
+  if (ts >= nowMs + 90 * 60 * 1000) {
+    return 'scheduled';
+  }
+
+  return 'active';
+}
+
 function inferTypeFromState(state) {
   const onGround = Boolean(state?.[8]);
   if (onGround) return 'arrival';
@@ -150,6 +169,7 @@ async function fetchStatesFallback(unixNow) {
         .map((s) => {
           const type = inferTypeFromState(s);
           if (!type) return null;
+          const onGround = Boolean(s?.[8]);
 
           const callsign = String(s?.[1] || '').trim();
           const icao24 = String(s?.[0] || '').trim();
@@ -160,6 +180,7 @@ async function fetchStatesFallback(unixNow) {
           if (!scheduledTime) return null;
 
           const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
+          const resolvedStatus = deriveResolvedStatus(type, scheduledTime, unixNow, { onGround });
           return {
             dedupeKey: `${icao24 || 'unknown'}|${projectedTs || 'unknown'}`,
             flight: {
@@ -171,8 +192,8 @@ async function fetchStatesFallback(unixNow) {
               scheduledTime,
               icao24,
               delay: 0,
-              status: 'active',
-              resolvedStatus: 'active'
+              status: resolvedStatus,
+              resolvedStatus
             }
           };
         })
@@ -191,6 +212,7 @@ async function fetchStatesFallback(unixNow) {
       .map((s) => {
         const type = inferTypeFromState(s);
         if (!type) return null;
+        const onGround = Boolean(s?.[8]);
 
         const callsign = String(s?.[1] || '').trim();
         const icao24 = String(s?.[0] || '').trim();
@@ -201,6 +223,7 @@ async function fetchStatesFallback(unixNow) {
         if (!scheduledTime) return null;
 
   const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
+        const resolvedStatus = deriveResolvedStatus(type, scheduledTime, unixNow, { onGround });
         return {
           dedupeKey: `${icao24 || 'unknown'}|${projectedTs || 'unknown'}`,
           flight: {
@@ -212,8 +235,8 @@ async function fetchStatesFallback(unixNow) {
             scheduledTime,
             icao24,
             delay: 0,
-            status: 'active',
-            resolvedStatus: 'active'
+            status: resolvedStatus,
+            resolvedStatus
           }
         };
       })
@@ -300,7 +323,7 @@ function keepRollingWindowFlights(flights, unixNow) {
   });
 }
 
-function mapDeparture(raw) {
+function mapDeparture(raw, unixNow) {
   const callsign = (raw?.callsign || '').trim();
   const icao24 = String(raw?.icao24 || '').trim();
   const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
@@ -308,6 +331,7 @@ function mapDeparture(raw) {
   const firstSeenIso = toIso(baseTs);
   const lastSeenIso = toIso(raw?.lastSeen);
   if (!firstSeenIso) return null;
+  const resolvedStatus = deriveResolvedStatus('departure', firstSeenIso, unixNow);
 
   return {
     dedupeKey: `${icao24 || 'unknown'}|${baseTs || 'unknown'}`,
@@ -321,13 +345,13 @@ function mapDeparture(raw) {
       lastSeen: lastSeenIso,
       icao24,
       delay: 0,
-      status: 'active',
-      resolvedStatus: 'active'
+      status: resolvedStatus,
+      resolvedStatus
     }
   };
 }
 
-function mapArrival(raw) {
+function mapArrival(raw, unixNow) {
   const callsign = (raw?.callsign || '').trim();
   const icao24 = String(raw?.icao24 || '').trim();
   const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
@@ -335,6 +359,7 @@ function mapArrival(raw) {
   const baseTs = Number.isFinite(raw?.lastSeen) ? raw.lastSeen : raw?.firstSeen;
   const lastSeenIso = toIso(baseTs);
   if (!lastSeenIso) return null;
+  const resolvedStatus = deriveResolvedStatus('arrival', lastSeenIso, unixNow);
 
   return {
     dedupeKey: `${icao24 || 'unknown'}|${raw?.firstSeen || baseTs || 'unknown'}`,
@@ -348,8 +373,8 @@ function mapArrival(raw) {
       firstSeen: firstSeenIso,
       icao24,
       delay: 0,
-      status: 'active',
-      resolvedStatus: 'active'
+      status: resolvedStatus,
+      resolvedStatus
     }
   };
 }
@@ -362,11 +387,11 @@ const [departuresRaw, arrivalsRaw] = await Promise.all([
 ]);
 
 const mappedDepartures = safeArray(departuresRaw)
-  .map(mapDeparture)
+  .map((row) => mapDeparture(row, unixNow))
   .filter(Boolean);
 
 const mappedArrivals = safeArray(arrivalsRaw)
-  .map(mapArrival)
+  .map((row) => mapArrival(row, unixNow))
   .filter(Boolean);
 
 const dedupe = new Map();

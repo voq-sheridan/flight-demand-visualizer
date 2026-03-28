@@ -4,7 +4,7 @@ title: Toronto Pearson Airport — Flight Activity
 
 # ✈ Toronto Pearson International Airport (YYZ)— Flights Monitor
 
-Recent and upcoming flights (past 12 hours + upcoming windows) for departures and arrivals.  
+Recent and near-term flights (past 12 hours + next 6 hours) for departures and arrivals.  
 Data sourced from [OpenSky Network](https://opensky-network.org/).
 
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
@@ -311,7 +311,7 @@ function buildUI() {
   // Chart title
   const title = document.createElement('div');
   title.className = 'chart-title';
-  title.textContent = 'Flight volume by hour — past 12h + upcoming flights';
+  title.textContent = 'Flight volume by hour — past 12h + next 6h';
 
   // Selected date heading
   const dateHeading = document.createElement('div');
@@ -1253,43 +1253,43 @@ function statusLabel(resolvedStatus, rawStatus, delay) {
 
 const now = new Date();
 const past12Hours = new Date(now.getTime() - 12 * 60 * 60 * 1000);
-const todayKeyForList = torontoDateKeyForList(now);
-const departuresPast12hAndUntilEndOfToday = flights
+const next6Hours = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+const departuresPast12hAndNext6h = flights
   .filter((f) => {
     if (f.type !== "departure") return false;
     const when = new Date(f.scheduledTime);
     if (Number.isNaN(when.getTime())) return false;
     const isPast12h = when >= past12Hours && when <= now;
-    const isUpcomingToday = when >= now && torontoDateKeyForList(when) === todayKeyForList;
-    return isPast12h || isUpcomingToday;
+    const isUpcoming6h = when >= now && when <= next6Hours;
+    return isPast12h || isUpcoming6h;
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
-const arrivalsPast12hAndUntilEndOfToday = flights
+const arrivalsPast12hAndNext6h = flights
   .filter((f) => {
     if (f.type !== "arrival") return false;
     const when = new Date(f.scheduledTime);
     if (Number.isNaN(when.getTime())) return false;
     const isPast12h = when >= past12Hours && when <= now;
-    const isUpcomingToday = when >= now && torontoDateKeyForList(when) === todayKeyForList;
-    return isPast12h || isUpcomingToday;
+    const isUpcoming6h = when >= now && when <= next6Hours;
+    return isPast12h || isUpcoming6h;
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
-if (departuresPast12hAndUntilEndOfToday.length === 0 && !data.error) {
+if (departuresPast12hAndNext6h.length === 0 && !data.error) {
   const depHeading = document.createElement("div");
   depHeading.className = "heatmap-section-title";
-  depHeading.textContent = "Departure List (Past 12 Hours + Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
+  depHeading.textContent = "Departure List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET · Best-effort OpenSky data)";
   display(depHeading);
 
   const box = document.createElement("div");
   box.className = "empty-box";
-  box.textContent = "No departure flights found in the past 12 hours or from now until end of today (ET).";
+  box.textContent = "No departure flights found in the past 12 hours or in the next 6 hours (ET).";
   display(box);
-} else if (departuresPast12hAndUntilEndOfToday.length > 0) {
+} else if (departuresPast12hAndNext6h.length > 0) {
   const heading = document.createElement("div");
   heading.className = "heatmap-section-title";
-  heading.textContent = "Departure List (Past 12 Hours + Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
+  heading.textContent = "Departure List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET · Best-effort OpenSky data)";
   display(heading);
 
   const hint = document.createElement("div");
@@ -1297,7 +1297,7 @@ if (departuresPast12hAndUntilEndOfToday.length === 0 && !data.error) {
   hint.textContent = "OpenSky does not guarantee a complete future timetable; this list shows all departures currently available in the feed.";
   display(hint);
 
-  const rows = departuresPast12hAndUntilEndOfToday.map((f) => {
+  const rows = departuresPast12hAndNext6h.map((f) => {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
@@ -1333,16 +1333,16 @@ if (departuresPast12hAndUntilEndOfToday.length === 0 && !data.error) {
 const arrHeading = document.createElement("div");
 arrHeading.className = "heatmap-section-title";
 arrHeading.style.marginTop = "1rem";
-arrHeading.textContent = "Arrival List (Past 12 Hours + Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
+arrHeading.textContent = "Arrival List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET · Best-effort OpenSky data)";
 display(arrHeading);
 
-if (arrivalsPast12hAndUntilEndOfToday.length === 0 && !data.error) {
+if (arrivalsPast12hAndNext6h.length === 0 && !data.error) {
   const box = document.createElement("div");
   box.className = "empty-box";
-  box.textContent = "No arrival flights found in the past 12 hours or from now until end of today (ET).";
+  box.textContent = "No arrival flights found in the past 12 hours or in the next 6 hours (ET).";
   display(box);
-} else if (arrivalsPast12hAndUntilEndOfToday.length > 0) {
-  const rows = arrivalsPast12hAndUntilEndOfToday.map((f) => {
+} else if (arrivalsPast12hAndNext6h.length > 0) {
+  const rows = arrivalsPast12hAndNext6h.map((f) => {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
@@ -1384,7 +1384,7 @@ if (data.fetchedAt) {
     timeZone: "America/Toronto",
     dateStyle: "medium",
     timeStyle: "short",
-  })} ET  ·  ${departuresPast12hAndUntilEndOfToday.length} departure flight${departuresPast12hAndUntilEndOfToday.length !== 1 ? "s" : ""} and ${arrivalsPast12hAndUntilEndOfToday.length} arrival flight${arrivalsPast12hAndUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
+  })} ET  ·  ${departuresPast12hAndNext6h.length} departure flight${departuresPast12hAndNext6h.length !== 1 ? "s" : ""} and ${arrivalsPast12hAndNext6h.length} arrival flight${arrivalsPast12hAndNext6h.length !== 1 ? "s" : ""} shown`;
   display(meta);
 }
 ```

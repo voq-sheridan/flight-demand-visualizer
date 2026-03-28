@@ -286,7 +286,10 @@ async function fetchAirportFlightsWithWindowFallback(endpoint, label, unixNow) {
     // Include historical window for heatmap context (past 12h).
     `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow}`,
     `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow}`,
-    // Mixed rolling window: past 12h + next 24h.
+  // Mixed rolling window: past 12h + next 6h.
+  `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow + 6 * 3600}`,
+  `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow + 6 * 3600}`,
+  // Broader fallback windows in case stricter calls fail.
     `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow + 24 * 3600}`,
     `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow + 24 * 3600}`,
     // Future-heavy windows for volume.
@@ -315,8 +318,8 @@ async function fetchAirportFlightsWithWindowFallback(endpoint, label, unixNow) {
 }
 
 function keepRollingWindowFlights(flights, unixNow) {
-  const startMs = (unixNow - 24 * 3600) * 1000;
-  const endMs = (unixNow + 96 * 3600) * 1000;
+  const startMs = (unixNow - 12 * 3600) * 1000;
+  const endMs = (unixNow + 6 * 3600) * 1000;
   return flights.filter((f) => {
     const ts = Date.parse(f.scheduledTime);
     return Number.isFinite(ts) && ts >= startMs && ts <= endMs;

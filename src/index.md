@@ -1326,6 +1326,7 @@ listsWrap.className = "list-panels";
 function createFlightListPanel({
   title,
   flights,
+  flightLabel,
   typeBadge,
   locationHeader,
   emptyText,
@@ -1344,18 +1345,31 @@ function createFlightListPanel({
   const toggleBtn = document.createElement("button");
   toggleBtn.type = "button";
   toggleBtn.className = "list-toggle-btn";
-  toggleBtn.textContent = "Hide list";
+  toggleBtn.textContent = "Show list";
 
   header.appendChild(heading);
   header.appendChild(toggleBtn);
 
   const body = document.createElement("div");
   body.className = "list-panel-body";
+  body.classList.add("collapsed");
+
+  if (data.fetchedAt) {
+    const panelMeta = document.createElement("div");
+    panelMeta.className = "meta";
+    panelMeta.style.marginTop = "0";
+    panelMeta.textContent = `Last updated: ${new Date(data.fetchedAt).toLocaleString("en-CA", {
+      timeZone: "America/Toronto",
+      dateStyle: "medium",
+      timeStyle: "short",
+    })} ET  ·  ${flights.length} ${flightLabel} flight${flights.length !== 1 ? "s" : ""} shown`;
+    body.appendChild(panelMeta);
+  }
 
   if (includeHint) {
     const hint = document.createElement("div");
     hint.className = "meta";
-    hint.style.marginTop = "0";
+    hint.style.marginTop = "0.35rem";
     hint.textContent = "This list shows all flights currently available in the feed. Check constantly for new flight updates";
     body.appendChild(hint);
   }
@@ -1410,6 +1424,7 @@ listsWrap.appendChild(
   createFlightListPanel({
     title: "Departure List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET)",
     flights: departuresPast12hAndNext6h,
+    flightLabel: "departure",
     typeBadge: "dep",
     locationHeader: "Destination",
     emptyText: "No departure flights found in the past 12 hours or in the next 6 hours (ET).",
@@ -1421,6 +1436,7 @@ listsWrap.appendChild(
   createFlightListPanel({
     title: "Arrival List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET)",
     flights: arrivalsPast12hAndNext6h,
+    flightLabel: "arrival",
     typeBadge: "arr",
     locationHeader: "Origin",
     emptyText: "No arrival flights found in the past 12 hours or in the next 6 hours (ET).",
@@ -1429,17 +1445,4 @@ listsWrap.appendChild(
 );
 
 display(listsWrap);
-```
-
-```js
-if (data.fetchedAt) {
-  const meta = document.createElement("p");
-  meta.className = "meta";
-  meta.textContent = `Last updated: ${new Date(data.fetchedAt).toLocaleString("en-CA", {
-    timeZone: "America/Toronto",
-    dateStyle: "medium",
-    timeStyle: "short",
-  })} ET  ·  ${departuresPast12hAndNext6h.length} departure flight${departuresPast12hAndNext6h.length !== 1 ? "s" : ""} and ${arrivalsPast12hAndNext6h.length} arrival flight${arrivalsPast12hAndNext6h.length !== 1 ? "s" : ""} shown`;
-  display(meta);
-}
 ```

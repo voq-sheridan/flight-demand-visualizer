@@ -247,13 +247,6 @@ Data sourced from [OpenSky Network](https://opensky-network.org/).
   }
 </style>
 
-<div class="legend">
-  <span class="legend-item"><span class="legend-dot dot-green"></span> Active / En-route — current demand</span>
-  <span class="legend-item"><span class="legend-dot dot-orange"></span> Delayed — potential staffing disruption</span>
-  <span class="legend-item"><span class="legend-dot dot-gray"></span> Cancelled / Landed</span>
-  <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
-</div>
-
 ```js
 const data = await FileAttachment("./data/flights.json").json();
 ```
@@ -288,10 +281,10 @@ function buildUI() {
 
   // Metric cards
   const metrics = {
-    active: createMetricCard('Active', '—', 'metric-active-card'),
-    delayed: createMetricCard('Delayed', '—', 'metric-delayed-card'),
-    scheduled: createMetricCard('Scheduled', '—', 'metric-scheduled-card'),
-    total: createMetricCard('Total flights (selected date)', '—', 'metric-total-card')
+    active: createMetricCard('', '—', 'metric-active-card'),
+    delayed: createMetricCard('', '—', 'metric-delayed-card'),
+    scheduled: createMetricCard('', '—', 'metric-scheduled-card'),
+    total: createMetricCard('', '—', 'metric-total-card')
   };
   Object.values(metrics).forEach(c => summaryPanel.appendChild(c.card));
 

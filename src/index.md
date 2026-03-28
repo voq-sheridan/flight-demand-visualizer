@@ -1252,6 +1252,7 @@ function statusLabel(resolvedStatus, rawStatus, delay) {
 }
 
 const now = new Date();
+const past12Hours = new Date(now.getTime() - 12 * 60 * 60 * 1000);
 const todayKeyForList = torontoDateKeyForList(now);
 const departuresUntilEndOfToday = flights
   .filter((f) => {
@@ -1262,12 +1263,14 @@ const departuresUntilEndOfToday = flights
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
-const arrivalsUntilEndOfToday = flights
+const arrivalsPast12hAndUntilEndOfToday = flights
   .filter((f) => {
     if (f.type !== "arrival") return false;
     const when = new Date(f.scheduledTime);
     if (Number.isNaN(when.getTime())) return false;
-    return when >= now && torontoDateKeyForList(when) === todayKeyForList;
+    const isPast12h = when >= past12Hours && when <= now;
+    const isUpcomingToday = when >= now && torontoDateKeyForList(when) === todayKeyForList;
+    return isPast12h || isUpcomingToday;
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
@@ -1328,16 +1331,16 @@ if (departuresUntilEndOfToday.length === 0 && !data.error) {
 const arrHeading = document.createElement("div");
 arrHeading.className = "heatmap-section-title";
 arrHeading.style.marginTop = "1rem";
-arrHeading.textContent = "Arrival List (Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
+arrHeading.textContent = "Arrival List (Past 12 Hours + Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
 display(arrHeading);
 
-if (arrivalsUntilEndOfToday.length === 0 && !data.error) {
+if (arrivalsPast12hAndUntilEndOfToday.length === 0 && !data.error) {
   const box = document.createElement("div");
   box.className = "empty-box";
-  box.textContent = "No arrival flights found from now until end of today (ET).";
+  box.textContent = "No arrival flights found in the past 12 hours or from now until end of today (ET).";
   display(box);
-} else if (arrivalsUntilEndOfToday.length > 0) {
-  const rows = arrivalsUntilEndOfToday.map((f) => {
+} else if (arrivalsPast12hAndUntilEndOfToday.length > 0) {
+  const rows = arrivalsPast12hAndUntilEndOfToday.map((f) => {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
@@ -1379,7 +1382,7 @@ if (data.fetchedAt) {
     timeZone: "America/Toronto",
     dateStyle: "medium",
     timeStyle: "short",
-  })} ET  ·  ${departuresUntilEndOfToday.length} departure flight${departuresUntilEndOfToday.length !== 1 ? "s" : ""} and ${arrivalsUntilEndOfToday.length} arrival flight${arrivalsUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
+  })} ET  ·  ${departuresUntilEndOfToday.length} departure flight${departuresUntilEndOfToday.length !== 1 ? "s" : ""} and ${arrivalsPast12hAndUntilEndOfToday.length} arrival flight${arrivalsPast12hAndUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
   display(meta);
 }
 ```

@@ -31,6 +31,19 @@ Data sourced from [OpenSky Network](https://opensky-network.org/).
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
+  .snapshot-totals {
+    flex: 1 1 100%;
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #334155;
+    margin-top: 0.25rem;
+    padding: 0.35rem 0.55rem;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+  }
   .pill-active    { background: #bbf7d0; color: #14532d; }
   .pill-delayed   { background: #fed7aa; color: #7c2d12; }
   .pill-landed    { background: #e5e7eb; color: #374151; }
@@ -278,9 +291,14 @@ function buildUI() {
     active: createMetricCard('Active', '—', 'metric-active-card'),
     delayed: createMetricCard('Delayed', '—', 'metric-delayed-card'),
     scheduled: createMetricCard('Scheduled', '—', 'metric-scheduled-card'),
-    total: createMetricCard('Total flights', '—', 'metric-total-card')
+    total: createMetricCard('Total flights (selected date)', '—', 'metric-total-card')
   };
   Object.values(metrics).forEach(c => summaryPanel.appendChild(c.card));
+
+  const snapshotTotals = document.createElement('div');
+  snapshotTotals.className = 'snapshot-totals';
+  snapshotTotals.textContent = 'Snapshot totals (all loaded dates) — Total: — · Departures: — · Arrivals: —';
+  summaryPanel.appendChild(snapshotTotals);
 
   const departureInsightBox = document.createElement('div');
   departureInsightBox.className = 'staff-insight-box staff-state-upcoming';
@@ -367,6 +385,7 @@ function buildUI() {
   return {
     wrapper,
     summaryPanel,
+  snapshotTotals,
     departureInsightBox,
     arrivalInsightBox,
     metrics,
@@ -395,6 +414,7 @@ function createMetricCard(label, num, variantClass) {
 const {
   wrapper,
   summaryPanel,
+  snapshotTotals,
   departureInsightBox,
   arrivalInsightBox,
   metrics,
@@ -953,6 +973,19 @@ function updateCountdown() {
 
 const countdownTimer = setInterval(updateCountdown, 1000);
 
+function updateSnapshotTotals(srcData) {
+  const flights = Array.isArray(srcData?.flights) ? srcData.flights : [];
+  const total = flights.length;
+  const departures = Number.isFinite(srcData?.totalDepartures)
+    ? srcData.totalDepartures
+    : flights.filter((f) => f.type === 'departure').length;
+  const arrivals = Number.isFinite(srcData?.totalArrivals)
+    ? srcData.totalArrivals
+    : flights.filter((f) => f.type === 'arrival').length;
+
+  snapshotTotals.textContent = `Snapshot totals (all loaded dates) — Total: ${total} · Departures: ${departures} · Arrivals: ${arrivals}`;
+}
+
 function renderTable(flightsForDate) {
   tableContainer.innerHTML = '';
   const filtered = flightsForDate.filter(f =>
@@ -1055,6 +1088,7 @@ function applyNewData(srcData) {
   allFlights = srcData.flights ?? [];
   fetchedAt = srcData.fetchedAt ? new Date(srcData.fetchedAt) : null;
   lastFetchedAtIso = srcData.fetchedAt || lastFetchedAtIso;
+  updateSnapshotTotals(srcData);
   recomputeDateOptions();
   renderForSelection();
 }

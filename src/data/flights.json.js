@@ -46,6 +46,78 @@ function toIso(ts) {
   return new Date(ts * 1000).toISOString();
 }
 
+function inferTypeFromState(state) {
+  const onGround = Boolean(state?.[8]);
+  if (onGround) return null;
+
+  const verticalRate = state?.[11];
+  if (Number.isFinite(verticalRate)) {
+    if (verticalRate < -0.5) return 'arrival';
+    if (verticalRate > 0.5) return 'departure';
+  }
+
+  const trueTrack = state?.[10];
+  if (Number.isFinite(trueTrack)) {
+    return trueTrack >= 180 ? 'arrival' : 'departure';
+  }
+
+  return 'departure';
+}
+
+async function fetchStatesFallback() {
+  const bbox = new URLSearchParams({
+    lamin: '43.4',
+    lomin: '-79.9',
+    lamax: '44.1',
+    lomax: '-78.9'
+  });
+
+  const url = `${OPEN_SKY_BASE}/states/all?${bbox}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      process.stderr.write(`OpenSky states fallback failed with HTTP ${res.status}\n`);
+      return [];
+    }
+    const json = await res.json();
+    const snapshotTs = Number(json?.time) || Math.floor(Date.now() / 1000);
+    const states = safeArray(json?.states);
+
+    return states
+      .map((s) => {
+        const type = inferTypeFromState(s);
+        if (!type) return null;
+
+        const callsign = String(s?.[1] || '').trim();
+        const icao24 = String(s?.[0] || '').trim();
+        const observedTs = s?.[3] || s?.[4] || snapshotTs;
+        const scheduledTime = toIso(observedTs);
+        if (!scheduledTime) return null;
+
+        const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
+        return {
+          dedupeKey: `${icao24 || 'unknown'}|${observedTs || 'unknown'}`,
+          flight: {
+            type,
+            flightNumber,
+            airline: deriveAirlineName(flightNumber),
+            otherAirport: 'Unknown',
+            otherAirportCode: 'N/A',
+            scheduledTime,
+            icao24,
+            delay: 0,
+            status: 'active',
+            resolvedStatus: 'active'
+          }
+        };
+      })
+      .filter(Boolean);
+  } catch (err) {
+    process.stderr.write(`OpenSky states fallback error: ${err.message}\n`);
+    return [];
+  }
+}
+
 async function fetchEndpoint(url, label) {
   try {
     const res = await fetch(url);
@@ -132,6 +204,15 @@ const dedupe = new Map();
 for (const item of [...mappedDepartures, ...mappedArrivals]) {
   if (!dedupe.has(item.dedupeKey)) {
     dedupe.set(item.dedupeKey, item.flight);
+  }
+}
+
+if (dedupe.size === 0) {
+  const fallbackFlights = await fetchStatesFallback();
+  for (const item of fallbackFlights) {
+    if (!dedupe.has(item.dedupeKey)) {
+      dedupe.set(item.dedupeKey, item.flight);
+    }
   }
 }
 

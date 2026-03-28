@@ -1,4 +1,9 @@
 const OPEN_SKY_BASE = "https://opensky-network.org/api";
+const OPEN_SKY_TOKEN_URL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token";
+const OPENSKY_CLIENT_ID = process.env.OPENSKY_CLIENT_ID || "";
+const OPENSKY_CLIENT_SECRET = process.env.OPENSKY_CLIENT_SECRET || "";
+
+let cachedAccessToken = null;
 
 function deriveAirlineName(callsign) {
   const prefix = callsign.replace(/[0-9]/g, '').trim().toUpperCase();
@@ -45,6 +50,55 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function getAccessToken(forceRefresh = false) {
+  if (!forceRefresh && cachedAccessToken) {
+    return cachedAccessToken;
+  }
+
+  if (!OPENSKY_CLIENT_ID || !OPENSKY_CLIENT_SECRET) {
+    return null;
+  }
+
+  try {
+    const body = new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: OPENSKY_CLIENT_ID,
+      client_secret: OPENSKY_CLIENT_SECRET
+    });
+
+    const res = await fetch(OPEN_SKY_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body
+    });
+
+    if (!res.ok) {
+      process.stderr.write(`OpenSky token request failed with HTTP ${res.status}\n`);
+      return null;
+    }
+
+    const json = await res.json();
+    const token = json?.access_token;
+    if (!token) {
+      process.stderr.write("OpenSky token response missing access_token\n");
+      return null;
+    }
+
+    cachedAccessToken = token;
+    return token;
+  } catch (err) {
+    process.stderr.write(`OpenSky token request error: ${err.message}\n`);
+    return null;
+  }
+}
+
+async function getAuthHeaders(forceRefresh = false) {
+  const token = await getAccessToken(forceRefresh);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 function toIso(ts) {
   if (!Number.isFinite(ts)) return null;
   return new Date(ts * 1000).toISOString();
@@ -78,7 +132,53 @@ async function fetchStatesFallback(unixNow) {
 
   const url = `${OPEN_SKY_BASE}/states/all?${bbox}`;
   try {
-    const res = await fetch(url);
+    const headers = await getAuthHeaders();
+    const res = await fetch(url, { headers });
+
+    if (res.status === 401) {
+      const retryHeaders = await getAuthHeaders(true);
+      const retryRes = await fetch(url, { headers: retryHeaders });
+      if (!retryRes.ok) {
+        process.stderr.write(`OpenSky states fallback failed with HTTP ${retryRes.status}\n`);
+        return [];
+      }
+      const retryJson = await retryRes.json();
+      const snapshotTs = Number(retryJson?.time) || unixNow;
+      const states = safeArray(retryJson?.states);
+
+      return states
+        .map((s) => {
+          const type = inferTypeFromState(s);
+          if (!type) return null;
+
+          const callsign = String(s?.[1] || '').trim();
+          const icao24 = String(s?.[0] || '').trim();
+          const projectedTs = type === 'departure'
+            ? snapshotTs + 45 * 60
+            : snapshotTs + 30 * 60;
+          const scheduledTime = toIso(projectedTs);
+          if (!scheduledTime) return null;
+
+          const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
+          return {
+            dedupeKey: `${icao24 || 'unknown'}|${projectedTs || 'unknown'}`,
+            flight: {
+              type,
+              flightNumber,
+              airline: deriveAirlineName(flightNumber),
+              otherAirport: 'Unknown',
+              otherAirportCode: 'N/A',
+              scheduledTime,
+              icao24,
+              delay: 0,
+              status: 'active',
+              resolvedStatus: 'active'
+            }
+          };
+        })
+        .filter(Boolean);
+    }
+
     if (!res.ok) {
       process.stderr.write(`OpenSky states fallback failed with HTTP ${res.status}\n`);
       return [];
@@ -127,9 +227,10 @@ async function fetchStatesFallback(unixNow) {
 async function fetchEndpoint(url, label) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(url);
+      const headers = await getAuthHeaders(attempt > 0);
+      const res = await fetch(url, { headers });
       if (!res.ok) {
-        if ((res.status === 429 || res.status === 503) && attempt < 2) {
+        if ((res.status === 429 || res.status === 503 || res.status === 401) && attempt < 2) {
           await sleep((attempt + 1) * 1200);
           continue;
         }

@@ -1356,7 +1356,7 @@ function createFlightListPanel({
     const hint = document.createElement("div");
     hint.className = "meta";
     hint.style.marginTop = "0";
-    hint.textContent = "OpenSky does not guarantee a complete future timetable; this list shows all flights currently available in the feed.";
+    hint.textContent = "This list shows all flights currently available in the feed. Check constantly for new flight updates";
     body.appendChild(hint);
   }
 
@@ -1424,6 +1424,7 @@ listsWrap.appendChild(
     typeBadge: "arr",
     locationHeader: "Origin",
     emptyText: "No arrival flights found in the past 12 hours or in the next 6 hours (ET).",
+    includeHint: true,
   })
 );
 

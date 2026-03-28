@@ -227,20 +227,6 @@ function buildUI() {
   title.className = 'chart-title';
   title.textContent = 'Flight volume by hour — next 24 hours';
 
-  // Controls row: date selector
-  const controlRow = document.createElement('div');
-  controlRow.className = 'control-row';
-
-  const dateGroup = document.createElement('div');
-  dateGroup.className = 'control-group';
-  const dateLabel = document.createElement('span');
-  dateLabel.textContent = 'Date:';
-  const dateSelect = document.createElement('select');
-  dateGroup.appendChild(dateLabel);
-  dateGroup.appendChild(dateSelect);
-
-  controlRow.appendChild(dateGroup);
-
   // Selected date heading
   const dateHeading = document.createElement('div');
   dateHeading.className = 'date-heading';
@@ -292,7 +278,6 @@ function buildUI() {
   tooltip.className = 'chart-tooltip hidden';
 
   chartCard.appendChild(title);
-  chartCard.appendChild(controlRow);
   chartCard.appendChild(dateHeading);
   chartCard.appendChild(sub);
   chartCard.appendChild(depHeatmapTitle);
@@ -315,7 +300,6 @@ function buildUI() {
     staffBanner,
     metrics,
     chartCard,
-    dateSelect,
     dateHeading,
     depHeatmapSvg,
     depHeatmapContainer,
@@ -343,7 +327,6 @@ const {
   staffBanner,
   metrics,
   chartCard,
-  dateSelect,
   dateHeading,
   depHeatmapSvg,
   depHeatmapContainer,
@@ -674,21 +657,6 @@ function recomputeDateOptions() {
   } else if (!availableDateKeys.includes(currentDateKey) && availableDateKeys.length) {
     currentDateKey = availableDateKeys[0];
   }
-
-  dateSelect.innerHTML = '';
-  availableDateKeys.forEach(k => {
-    const opt = document.createElement('option');
-    opt.value = k;
-    const d = new Date(`${k}T00:00:00`);
-    opt.textContent = d.toLocaleDateString('en-CA', {
-      timeZone: 'America/Toronto',
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
-    if (k === currentDateKey) opt.selected = true;
-    dateSelect.appendChild(opt);
-  });
 }
 
 function ensureMetaRow() {
@@ -871,12 +839,6 @@ async function fetchLatestFlightsData() {
   }
   return await resp.json();
 }
-
-// Wire up controls
-dateSelect.addEventListener('change', () => {
-  currentDateKey = dateSelect.value;
-  renderForSelection();
-});
 
 // initial render
 try {

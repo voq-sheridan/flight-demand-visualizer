@@ -323,6 +323,14 @@ function keepRollingWindowFlights(flights, unixNow) {
   });
 }
 
+function isStrictYyzFlight(flight) {
+  const dep = String(flight?.departureIata || '').toUpperCase();
+  const arr = String(flight?.arrivalIata || '').toUpperCase();
+  if (flight?.type === 'departure') return dep === 'YYZ';
+  if (flight?.type === 'arrival') return arr === 'YYZ';
+  return false;
+}
+
 function mapDeparture(raw, unixNow) {
   const callsign = (raw?.callsign || '').trim();
   const icao24 = String(raw?.icao24 || '').trim();
@@ -341,6 +349,8 @@ function mapDeparture(raw, unixNow) {
       airline: deriveAirlineName(flightNumber),
       otherAirport: raw?.estArrivalAirport || 'Unknown',
       otherAirportCode: raw?.estArrivalAirport || 'N/A',
+  departureIata: 'YYZ',
+  arrivalIata: '',
       scheduledTime: firstSeenIso,
       lastSeen: lastSeenIso,
       icao24,
@@ -369,6 +379,8 @@ function mapArrival(raw, unixNow) {
       airline: deriveAirlineName(flightNumber),
       otherAirport: raw?.estDepartureAirport || 'Unknown',
       otherAirportCode: raw?.estDepartureAirport || 'N/A',
+  departureIata: '',
+  arrivalIata: 'YYZ',
       scheduledTime: lastSeenIso,
       firstSeen: firstSeenIso,
       icao24,
@@ -408,7 +420,9 @@ for (const item of fallbackFlights) {
   }
 }
 
-const flights = keepRollingWindowFlights(Array.from(dedupe.values()), unixNow).sort(
+const yyzScopedFlights = Array.from(dedupe.values()).filter(isStrictYyzFlight);
+
+const flights = keepRollingWindowFlights(yyzScopedFlights, unixNow).sort(
   (a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime)
 );
 

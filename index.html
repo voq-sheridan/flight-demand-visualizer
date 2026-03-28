@@ -18,14 +18,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.41cb4364.json","lastModified":1774732972185,"size":35704});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.0970988a.json","lastModified":1774733192026,"size":35507});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "c7dbc390", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","availableDateKeys","currentDateKey","currentStatusFilter","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
+define({id: "cade2109", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","availableDateKeys","currentDateKey","currentStatusFilter","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
 // Render live summary, busyness chart and auto-refresh (2 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 let d3;
@@ -87,11 +87,11 @@ function buildUI() {
   // Subtitle
   const sub = document.createElement('div');
   sub.className = 'chart-sub';
-  sub.textContent = 'GitHub-style heatmaps for today and tomorrow using recent + upcoming flights. Darker red indicates higher staffing pressure.';
+  sub.textContent = 'Departures heatmap focuses on today (ET); arrivals heatmap covers today and tomorrow. Future flights are best-effort from OpenSky.';
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';
-  depHeatmapTitle.textContent = 'Departures by Hour';
+  depHeatmapTitle.textContent = 'Departures by Hour (Today, ET)';
 
   const depHeatmapContainer = document.createElement('div');
   depHeatmapContainer.className = 'heatmap-container';
@@ -820,7 +820,8 @@ function renderForSelection() {
   metrics.total.set(totalFlights);
 
   const heatmapDateKeys = getHeatmapDateKeys();
-  const depHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'departures');
+  const todayHeatmapKey = torontoDateKey(new Date());
+  const depHeatmapData = buildDirectionalHeatmapData(allFlights, [todayHeatmapKey], 'departures');
   const arrHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'arrivals');
   const sharedMax = Math.max(depHeatmapData.maxTotal, arrHeatmapData.maxTotal);
 
@@ -971,8 +972,22 @@ if (data.error) {
 }
 }});
 
-define({id: "a0b6df53", inputs: ["data","display"], outputs: ["flights","formatTime","pillClass","rowClass","statusLabel"], body: (data,display) => {
+define({id: "27dedcbd", inputs: ["data","display"], outputs: ["flights","torontoDateKeyForList","formatTime","pillClass","rowClass","statusLabel","now","todayKeyForList","departuresUntilEndOfToday"], body: (data,display) => {
 const flights = data.flights ?? [];
+
+function torontoDateKeyForList(date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Toronto",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  const day = parts.find((p) => p.type === "day")?.value;
+  return `${year}-${month}-${day}`;
+}
 
 function formatTime(iso) {
   if (!iso) return "—";
@@ -1006,20 +1021,41 @@ function statusLabel(resolvedStatus, rawStatus, delay) {
   return labels[resolvedStatus] ?? rawStatus ?? "Unknown";
 }
 
-if (flights.length === 0 && !data.error) {
+const now = new Date();
+const todayKeyForList = torontoDateKeyForList(now);
+const departuresUntilEndOfToday = flights
+  .filter((f) => {
+    if (f.type !== "departure") return false;
+    const when = new Date(f.scheduledTime);
+    if (Number.isNaN(when.getTime())) return false;
+    return when >= now && torontoDateKeyForList(when) === todayKeyForList;
+  })
+  .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
+
+if (departuresUntilEndOfToday.length === 0 && !data.error) {
   const box = document.createElement("div");
   box.className = "empty-box";
-  box.textContent = "No flights found in the next 24 hours.";
+  box.textContent = "No departure flights found from now until end of today (ET).";
   display(box);
-} else if (flights.length > 0) {
-  const rows = flights.map((f) => {
+} else if (departuresUntilEndOfToday.length > 0) {
+  const heading = document.createElement("div");
+  heading.className = "heatmap-section-title";
+  heading.textContent = "Departure List (Now → End of Today, ET · Best-effort OpenSky data)";
+  display(heading);
+
+  const hint = document.createElement("div");
+  hint.className = "meta";
+  hint.textContent = "OpenSky does not guarantee a complete future timetable; this list shows all departures currently available in the feed.";
+  display(hint);
+
+  const rows = departuresUntilEndOfToday.map((f) => {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
     const label = statusLabel(f.resolvedStatus, f.status, f.delay);
     return `
       <tr class="${rowClass(f.resolvedStatus)}">
-        <td><span class="badge badge-${f.type === "departure" ? "dep" : "arr"}">${f.type === "departure" ? "DEP" : "ARR"}</span></td>
+        <td><span class="badge badge-dep">DEP</span></td>
         <td><strong>${f.flightNumber}</strong></td>
         <td>${f.airline}</td>
         <td>${airport}</td>
@@ -1036,7 +1072,7 @@ if (flights.length === 0 && !data.error) {
         <th>Type</th>
         <th>Flight</th>
         <th>Airline</th>
-        <th>${"Origin / Destination"}</th>
+        <th>${"Destination"}</th>
         <th>Scheduled (ET)</th>
         <th>Status</th>
       </tr>
@@ -1044,10 +1080,10 @@ if (flights.length === 0 && !data.error) {
     <tbody>${rows}</tbody>`;
   display(table);
 }
-return {flights,formatTime,pillClass,rowClass,statusLabel};
+return {flights,torontoDateKeyForList,formatTime,pillClass,rowClass,statusLabel,now,todayKeyForList,departuresUntilEndOfToday};
 }});
 
-define({id: "688436bd", inputs: ["data","flights","display"], body: (data,flights,display) => {
+define({id: "3283314e", inputs: ["data","departuresUntilEndOfToday","display"], body: (data,departuresUntilEndOfToday,display) => {
 if (data.fetchedAt) {
   const meta = document.createElement("p");
   meta.className = "meta";
@@ -1055,7 +1091,7 @@ if (data.fetchedAt) {
     timeZone: "America/Toronto",
     dateStyle: "medium",
     timeStyle: "short",
-  })} ET  ·  ${flights.length} flight${flights.length !== 1 ? "s" : ""} shown`;
+  })} ET  ·  ${departuresUntilEndOfToday.length} departure flight${departuresUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
   display(meta);
 }
 }});
@@ -1317,13 +1353,13 @@ Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="no
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
-<div class="observablehq observablehq--block"><!--:c7dbc390:--></div>
+<div class="observablehq observablehq--block"><!--:cade2109:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
-<div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
-<div class="observablehq observablehq--block"><!--:688436bd:--></div>
+<div class="observablehq observablehq--block"><!--:27dedcbd:--></div>
+<div class="observablehq observablehq--block"><!--:3283314e:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T21:22:44">Mar 28, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T21:26:18">Mar 28, 2026</a>.</div>
 </footer>
 </div>
 </body>

@@ -52,7 +52,7 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.c2f51db0.json","lastModified":1774726209116,"size":35215});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.b0b4e52b.json","lastModified":1774727181733,"size":99});
 
 define({id: "12516d97", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
@@ -961,11 +961,9 @@ if (typeof invalidation !== 'undefined') {
 return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,departureInsightBox,arrivalInsightBox,metrics,chartCard,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,torontoHourMinute,torontoMinutesNow,formatClock12,formatClockFromMinutes,getPeakHourForToday,applyInsightState,renderDepartureInsightBox,renderArrivalInsightBox,buildBinsForDate,heatmapColor,parseDateKey,shiftDateKey,getHeatmapDateKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,lastFetchedAtIso,availableDateKeys,currentDateKey,currentStatusFilter,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,isPageActive,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,renderTable,renderForSelection,applyNewData,fetchLatestFlightsData,runRefreshCycle,refreshTimer,onVisibilityChangeHandler,beforeUnloadHandler};
 }});
 
-define({id: "c9eddbf6", inputs: ["data","display"], body: (data,display) => {
+define({id: "89e04ded", inputs: ["data","display"], body: (data,display) => {
 if (data.error) {
-  const msg = data.error === "missing_api_key"
-    ? "AviationStack API key is not configured. Set the <code>AVIATIONSTACK_API_KEY</code> environment variable and restart the dev server."
-    : `Failed to load flight data: ${data.error}`;
+  const msg = `Failed to load flight data: ${data.error}`;
   const box = document.createElement("div");
   box.className = "error-box";
   box.innerHTML = `⚠️ ${msg}`;
@@ -1073,7 +1071,7 @@ if (data.fetchedAt) {
 <main id="observablehq-main" class="observablehq">
 <h1 id="toronto-pearson-international-airport-yyz-flights-monitor" tabindex="-1"><a class="observablehq-header-anchor" href="#toronto-pearson-international-airport-yyz-flights-monitor">✈ Toronto Pearson International Airport (YYZ)— Flights Monitor</a></h1>
 <p>Live and upcoming flights for the next 24 hours (departures and arrivals).<br>
-Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noopener noreferrer">AviationStack</a>.</p>
+Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="noopener noreferrer">OpenSky Network</a>.</p>
 <style>
   /* Layout */
   .top-row {
@@ -1306,12 +1304,12 @@ Data sourced from <a href="https://aviationstack.com/" target="_blank" rel="noop
 </div>
 <div class="observablehq observablehq--block"><!--:12516d97:--></div>
 <div class="observablehq observablehq--block"><!--:e0ac6d8e:--></div>
-<div class="observablehq observablehq--block"><!--:c9eddbf6:--></div>
+<div class="observablehq observablehq--block"><!--:89e04ded:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T19:30:03">Mar 28, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T19:46:16">Mar 28, 2026</a>.</div>
 </footer>
 </div>
 </body>

@@ -245,6 +245,58 @@ Data sourced from [OpenSky Network](https://opensky-network.org/).
     color: #6b7280;
     font-style: italic;
   }
+
+  .list-panels {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 0.8rem;
+    align-items: start;
+  }
+
+  .list-panel {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 0.7rem 0.75rem;
+  }
+
+  .list-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .list-panel-header .heatmap-section-title {
+    margin: 0;
+  }
+
+  .list-toggle-btn {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.28rem 0.55rem;
+    cursor: pointer;
+  }
+
+  .list-toggle-btn:hover {
+    background: #f1f5f9;
+  }
+
+  .list-panel-body.collapsed {
+    display: none;
+  }
+
+  @media (max-width: 980px) {
+    .list-panels {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 
 ```js
@@ -1268,98 +1320,114 @@ const arrivalsPast12hAndNext6h = flights
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
-if (departuresPast12hAndNext6h.length === 0 && !data.error) {
-  const depHeading = document.createElement("div");
-  depHeading.className = "heatmap-section-title";
-  depHeading.textContent = "Departure List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET · Best-effort OpenSky data)";
-  display(depHeading);
+const listsWrap = document.createElement("div");
+listsWrap.className = "list-panels";
 
-  const box = document.createElement("div");
-  box.className = "empty-box";
-  box.textContent = "No departure flights found in the past 12 hours or in the next 6 hours (ET).";
-  display(box);
-} else if (departuresPast12hAndNext6h.length > 0) {
+function createFlightListPanel({
+  title,
+  flights,
+  typeBadge,
+  locationHeader,
+  emptyText,
+  includeHint = false,
+}) {
+  const panel = document.createElement("section");
+  panel.className = "list-panel";
+
+  const header = document.createElement("div");
+  header.className = "list-panel-header";
+
   const heading = document.createElement("div");
   heading.className = "heatmap-section-title";
-  heading.textContent = "Departure List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET · Best-effort OpenSky data)";
-  display(heading);
+  heading.textContent = title;
 
-  const hint = document.createElement("div");
-  hint.className = "meta";
-  hint.textContent = "OpenSky does not guarantee a complete future timetable; this list shows all departures currently available in the feed.";
-  display(hint);
+  const toggleBtn = document.createElement("button");
+  toggleBtn.type = "button";
+  toggleBtn.className = "list-toggle-btn";
+  toggleBtn.textContent = "Hide list";
 
-  const rows = departuresPast12hAndNext6h.map((f) => {
-    const airport = f.otherAirportCode
-      ? `${f.otherAirport} (${f.otherAirportCode})`
-      : f.otherAirport;
-    return `
+  header.appendChild(heading);
+  header.appendChild(toggleBtn);
+
+  const body = document.createElement("div");
+  body.className = "list-panel-body";
+
+  if (includeHint) {
+    const hint = document.createElement("div");
+    hint.className = "meta";
+    hint.style.marginTop = "0";
+    hint.textContent = "OpenSky does not guarantee a complete future timetable; this list shows all flights currently available in the feed.";
+    body.appendChild(hint);
+  }
+
+  if (flights.length === 0 && !data.error) {
+    const box = document.createElement("div");
+    box.className = "empty-box";
+    box.textContent = emptyText;
+    body.appendChild(box);
+  } else if (flights.length > 0) {
+    const rows = flights.map((f) => {
+      const airport = f.otherAirportCode
+        ? `${f.otherAirport} (${f.otherAirportCode})`
+        : f.otherAirport;
+      return `
       <tr class="${rowClass(f.resolvedStatus)}">
-        <td><span class="badge badge-dep">DEP</span></td>
+        <td><span class="badge badge-${typeBadge}">${typeBadge.toUpperCase()}</span></td>
         <td><strong>${f.flightNumber}</strong></td>
         <td>${f.airline}</td>
         <td>${airport}</td>
         <td>${formatTime(f.scheduledTime)}</td>
       </tr>`;
-  }).join("");
+    }).join("");
 
-  const table = document.createElement("table");
-  table.className = "flight-board";
-  table.innerHTML = `
+    const table = document.createElement("table");
+    table.className = "flight-board";
+    table.innerHTML = `
     <thead>
       <tr>
         <th>Type</th>
         <th>Flight</th>
         <th>Airline</th>
-        <th>${"Destination"}</th>
+        <th>${locationHeader}</th>
         <th>Scheduled (ET)</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>`;
-  display(table);
+    body.appendChild(table);
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    const isCollapsed = body.classList.toggle("collapsed");
+    toggleBtn.textContent = isCollapsed ? "Show list" : "Hide list";
+  });
+
+  panel.appendChild(header);
+  panel.appendChild(body);
+  return panel;
 }
 
-const arrHeading = document.createElement("div");
-arrHeading.className = "heatmap-section-title";
-arrHeading.style.marginTop = "1rem";
-arrHeading.textContent = "Arrival List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET · Best-effort OpenSky data)";
-display(arrHeading);
+listsWrap.appendChild(
+  createFlightListPanel({
+    title: "Departure List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET)",
+    flights: departuresPast12hAndNext6h,
+    typeBadge: "dep",
+    locationHeader: "Destination",
+    emptyText: "No departure flights found in the past 12 hours or in the next 6 hours (ET).",
+    includeHint: true,
+  })
+);
 
-if (arrivalsPast12hAndNext6h.length === 0 && !data.error) {
-  const box = document.createElement("div");
-  box.className = "empty-box";
-  box.textContent = "No arrival flights found in the past 12 hours or in the next 6 hours (ET).";
-  display(box);
-} else if (arrivalsPast12hAndNext6h.length > 0) {
-  const rows = arrivalsPast12hAndNext6h.map((f) => {
-    const airport = f.otherAirportCode
-      ? `${f.otherAirport} (${f.otherAirportCode})`
-      : f.otherAirport;
-    return `
-      <tr class="${rowClass(f.resolvedStatus)}">
-        <td><span class="badge badge-arr">ARR</span></td>
-        <td><strong>${f.flightNumber}</strong></td>
-        <td>${f.airline}</td>
-        <td>${airport}</td>
-        <td>${formatTime(f.scheduledTime)}</td>
-      </tr>`;
-  }).join("");
+listsWrap.appendChild(
+  createFlightListPanel({
+    title: "Arrival List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET)",
+    flights: arrivalsPast12hAndNext6h,
+    typeBadge: "arr",
+    locationHeader: "Origin",
+    emptyText: "No arrival flights found in the past 12 hours or in the next 6 hours (ET).",
+  })
+);
 
-  const table = document.createElement("table");
-  table.className = "flight-board";
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Flight</th>
-        <th>Airline</th>
-        <th>${"Origin"}</th>
-        <th>Scheduled (ET)</th>
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>`;
-  display(table);
-}
+display(listsWrap);
 ```
 
 ```js

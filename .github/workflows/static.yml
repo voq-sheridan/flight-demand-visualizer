@@ -14,8 +14,6 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run build
-        env:
-          AVIATIONSTACK_API_KEY: ${{ secrets.AVIATIONSTACK_API_KEY }}
       - run: touch dist/.nojekyll
       - uses: peaceiris/actions-gh-pages@v3
         with:

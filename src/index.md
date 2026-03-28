@@ -5,7 +5,7 @@ title: Toronto Pearson Airport — Flight Activity
 # ✈ Toronto Pearson International Airport (YYZ)— Flights Monitor
 
 Live and upcoming flights for the next 24 hours (departures and arrivals).  
-Data sourced from [AviationStack](https://aviationstack.com/).
+Data sourced from [OpenSky Network](https://opensky-network.org/).
 
 <style>
   /* Layout */
@@ -1145,9 +1145,7 @@ if (typeof invalidation !== 'undefined') {
 ```
 ```js
 if (data.error) {
-  const msg = data.error === "missing_api_key"
-    ? "AviationStack API key is not configured. Set the <code>AVIATIONSTACK_API_KEY</code> environment variable and restart the dev server."
-    : `Failed to load flight data: ${data.error}`;
+  const msg = `Failed to load flight data: ${data.error}`;
   const box = document.createElement("div");
   box.className = "error-box";
   box.innerHTML = `⚠️ ${msg}`;

@@ -1,88 +1,86 @@
-// Data loader: fetches departures and arrivals for Toronto Pearson (YYZ)
-// from AviationStack and returns realtime flights for the next 24 hours,
-// plus yesterday's flights when historical access is available.
-// Requires the AVIATIONSTACK_API_KEY environment variable to be set.
+// Data loader: fetches departures and arrivals for Toronto Pearson (CYYZ)
+// from OpenSky Network for the next 24 hours and outputs the same schema
+// used by the dashboard visualizations.
 
-const ACCESS_KEY = process.env.AVIATIONSTACK_API_KEY;
-const BASE_URL = "http://api.aviationstack.com/v1/flights";
+const OPEN_SKY_BASE = "https://opensky-network.org/api";
+const AIRLINE_BY_PREFIX = {
+  ACA: "Air Canada",
+  WJA: "WestJet",
+  UAL: "United Airlines",
+  AAL: "American Airlines",
+  DAL: "Delta Air Lines",
+  BAW: "British Airways",
+  DLH: "Lufthansa",
+  AFR: "Air France",
+  KLM: "KLM",
+  UAE: "Emirates",
+  ETH: "Ethiopian Airlines",
+  TSC: "Air Transat",
+  POE: "Porter Airlines"
+};
 
-if (!ACCESS_KEY) {
-  process.stderr.write("Error: AVIATIONSTACK_API_KEY environment variable is not set.\n");
-  process.stdout.write(JSON.stringify({ error: "missing_api_key", flights: [], fetchedAt: new Date().toISOString() }));
-  process.exit(0);
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchFlights(params) {
-  const qs = new URLSearchParams({ access_key: ACCESS_KEY, limit: "100", ...params });
-  const res = await fetch(`${BASE_URL}?${qs}`);
-  if (!res.ok) {
-    throw new Error(`AviationStack API responded with HTTP ${res.status}`);
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function deriveAirlineName(callsign) {
+  const normalized = (callsign || "").trim().toUpperCase();
+  const prefix = normalized.match(/^[A-Z]{3}/)?.[0] || "";
+  return AIRLINE_BY_PREFIX[prefix] || (callsign || "Unknown Airline").trim() || "Unknown Airline";
+}
+
+async function fetchOpenSkyArray(url) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch(url);
+
+    if ((res.status === 404 || res.status === 503) && attempt === 0) {
+      await sleep(2000);
+      continue;
+    }
+
+    if (!res.ok) {
+      throw new Error(`OpenSky API responded with HTTP ${res.status}`);
+    }
+
+    const json = await res.json();
+    return safeArray(json);
   }
-  const json = await res.json();
-  if (json.error) {
-    throw new Error(`AviationStack API error: ${json.error.info || JSON.stringify(json.error)}`);
-  }
-  return json;
+
+  return [];
 }
 
-async function fetchFlightsOptional(params, tag) {
-  try {
-    return await fetchFlights(params);
-  } catch (err) {
-    process.stderr.write(`Warning: optional ${tag} fetch failed: ${err.message}\n`);
-    return { data: [] };
-  }
+function toIsoFromUnixSeconds(ts) {
+  if (!Number.isFinite(ts)) return null;
+  const iso = new Date(ts * 1000).toISOString();
+  return Number.isNaN(Date.parse(iso)) ? null : iso;
 }
 
-const now = new Date();
-const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+function normalizeOpenSkyFlight(raw, type) {
+  const callsign = (raw?.callsign || "").trim();
+  const flightNumber = callsign || (raw?.icao24 || "N/A").toUpperCase();
+  const scheduledTime = toIsoFromUnixSeconds(raw?.firstSeen);
+  if (!scheduledTime) return null;
 
-function withinNext24Hours(isoString) {
-  if (!isoString) return false;
-  const t = new Date(isoString);
-  return t >= now && t <= in24h;
-}
+  const otherAirportCode = type === "departure"
+    ? (raw?.estArrivalAirport || "")
+    : (raw?.estDepartureAirport || "");
 
-// Maps AviationStack flight_status + delay value to a display category.
-function resolveStatus(flightStatus, delayMinutes) {
-  const s = (flightStatus || "").toLowerCase();
-  if (s === "active") return "active";
-  if (s === "landed") return "landed";
-  if (s === "cancelled") return "cancelled";
-  if (s === "incident" || s === "diverted") return "delayed";
-  if (s === "delayed" || (s === "scheduled" && delayMinutes > 0)) return "delayed";
-  return "scheduled";
-}
-
-function normalizeDeparture(f) {
   return {
-    type: "departure",
-    departureIata: f.departure?.iata || "",
-    arrivalIata: f.arrival?.iata || "",
-    flightNumber: f.flight?.iata || f.flight?.icao || "N/A",
-    airline: f.airline?.name || "Unknown Airline",
-    otherAirport: f.arrival?.airport || "Unknown",
-    otherAirportCode: f.arrival?.iata || "",
-    scheduledTime: f.departure?.scheduled,
-    delay: f.departure?.delay ?? 0,
-    status: f.flight_status,
-    resolvedStatus: resolveStatus(f.flight_status, f.departure?.delay),
-  };
-}
-
-function normalizeArrival(f) {
-  return {
-    type: "arrival",
-    departureIata: f.departure?.iata || "",
-    arrivalIata: f.arrival?.iata || "",
-    flightNumber: f.flight?.iata || f.flight?.icao || "N/A",
-    airline: f.airline?.name || "Unknown Airline",
-    otherAirport: f.departure?.airport || "Unknown",
-    otherAirportCode: f.departure?.iata || "",
-    scheduledTime: f.arrival?.scheduled,
-    delay: f.arrival?.delay ?? 0,
-    status: f.flight_status,
-    resolvedStatus: resolveStatus(f.flight_status, f.arrival?.delay),
+    type,
+    departureIata: type === "departure" ? "YYZ" : "",
+    arrivalIata: type === "arrival" ? "YYZ" : "",
+    flightNumber,
+    airline: deriveAirlineName(callsign || flightNumber),
+    otherAirport: otherAirportCode || "Unknown",
+    otherAirportCode: otherAirportCode || "",
+    scheduledTime,
+    delay: 0,
+    status: "active",
+    resolvedStatus: "active"
   };
 }
 
@@ -99,48 +97,26 @@ function dedupeFlights(items) {
 let flights = [];
 
 try {
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  const yesterdayKey = yesterday.toISOString().slice(0, 10);
+  const unixStart = Math.floor(Date.now() / 1000);
+  const unixEnd = unixStart + 86400;
 
-  const [depData, arrData] = await Promise.all([
-    fetchFlights({ dep_iata: "YYZ" }),
-    fetchFlights({ arr_iata: "YYZ" }),
+  const departuresUrl = `${OPEN_SKY_BASE}/departures/airport?airport=CYYZ&begin=${unixStart}&end=${unixEnd}`;
+  const arrivalsUrl = `${OPEN_SKY_BASE}/arrivals/airport?airport=CYYZ&begin=${unixStart}&end=${unixEnd}`;
+
+  const [departuresRaw, arrivalsRaw] = await Promise.all([
+    fetchOpenSkyArray(departuresUrl),
+    fetchOpenSkyArray(arrivalsUrl)
   ]);
 
-  const [depHistoricalData, arrHistoricalData] = await Promise.all([
-    fetchFlightsOptional(
-      { dep_iata: "YYZ", flight_date: yesterdayKey },
-      `historical departures (${yesterdayKey})`
-    ),
-    fetchFlightsOptional(
-      { arr_iata: "YYZ", flight_date: yesterdayKey },
-      `historical arrivals (${yesterdayKey})`
-    ),
-  ]);
+  const departures = safeArray(departuresRaw)
+    .map((f) => normalizeOpenSkyFlight(f, "departure"))
+    .filter(Boolean);
 
-  const departuresRealtime = (depData.data || [])
-    .filter((f) => withinNext24Hours(f.departure?.scheduled))
-    .map(normalizeDeparture);
+  const arrivals = safeArray(arrivalsRaw)
+    .map((f) => normalizeOpenSkyFlight(f, "arrival"))
+    .filter(Boolean);
 
-  const arrivalsRealtime = (arrData.data || [])
-    .filter((f) => withinNext24Hours(f.arrival?.scheduled))
-    .map(normalizeArrival);
-
-  const departuresHistorical = (depHistoricalData.data || [])
-    .filter((f) => !!f.departure?.scheduled)
-    .map(normalizeDeparture);
-
-  const arrivalsHistorical = (arrHistoricalData.data || [])
-    .filter((f) => !!f.arrival?.scheduled)
-    .map(normalizeArrival);
-
-  flights = dedupeFlights([
-    ...departuresRealtime,
-    ...arrivalsRealtime,
-    ...departuresHistorical,
-    ...arrivalsHistorical,
-  ]).sort(
+  flights = dedupeFlights([...departures, ...arrivals]).sort(
     (a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime)
   );
 } catch (err) {
@@ -151,6 +127,4 @@ try {
   process.exit(0);
 }
 
-process.stdout.write(
-  JSON.stringify({ flights, fetchedAt: new Date().toISOString() })
-);
+process.stdout.write(JSON.stringify({ flights, fetchedAt: new Date().toISOString() }));

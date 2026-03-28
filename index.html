@@ -18,7 +18,7 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.0970988a.json","lastModified":1774733192026,"size":35507});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.6edfe314.json","lastModified":1774733410631,"size":34761});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
@@ -972,7 +972,7 @@ if (data.error) {
 }
 }});
 
-define({id: "27dedcbd", inputs: ["data","display"], outputs: ["flights","torontoDateKeyForList","formatTime","pillClass","rowClass","statusLabel","now","todayKeyForList","departuresUntilEndOfToday"], body: (data,display) => {
+define({id: "079a42ff", inputs: ["data","display"], outputs: ["flights","torontoDateKeyForList","formatTime","pillClass","rowClass","statusLabel","now","todayKeyForList","departuresUntilEndOfToday","arrivalsUntilEndOfToday","arrHeading"], body: (data,display) => {
 const flights = data.flights ?? [];
 
 function torontoDateKeyForList(date) {
@@ -1032,7 +1032,21 @@ const departuresUntilEndOfToday = flights
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
+const arrivalsUntilEndOfToday = flights
+  .filter((f) => {
+    if (f.type !== "arrival") return false;
+    const when = new Date(f.scheduledTime);
+    if (Number.isNaN(when.getTime())) return false;
+    return when >= now && torontoDateKeyForList(when) === todayKeyForList;
+  })
+  .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
+
 if (departuresUntilEndOfToday.length === 0 && !data.error) {
+  const depHeading = document.createElement("div");
+  depHeading.className = "heatmap-section-title";
+  depHeading.textContent = "Departure List (Now → End of Today, ET · Best-effort OpenSky data)";
+  display(depHeading);
+
   const box = document.createElement("div");
   box.className = "empty-box";
   box.textContent = "No departure flights found from now until end of today (ET).";
@@ -1080,10 +1094,55 @@ if (departuresUntilEndOfToday.length === 0 && !data.error) {
     <tbody>${rows}</tbody>`;
   display(table);
 }
-return {flights,torontoDateKeyForList,formatTime,pillClass,rowClass,statusLabel,now,todayKeyForList,departuresUntilEndOfToday};
+
+const arrHeading = document.createElement("div");
+arrHeading.className = "heatmap-section-title";
+arrHeading.style.marginTop = "1rem";
+arrHeading.textContent = "Arrival List (Now → End of Today, ET · Best-effort OpenSky data)";
+display(arrHeading);
+
+if (arrivalsUntilEndOfToday.length === 0 && !data.error) {
+  const box = document.createElement("div");
+  box.className = "empty-box";
+  box.textContent = "No arrival flights found from now until end of today (ET).";
+  display(box);
+} else if (arrivalsUntilEndOfToday.length > 0) {
+  const rows = arrivalsUntilEndOfToday.map((f) => {
+    const airport = f.otherAirportCode
+      ? `${f.otherAirport} (${f.otherAirportCode})`
+      : f.otherAirport;
+    const label = statusLabel(f.resolvedStatus, f.status, f.delay);
+    return `
+      <tr class="${rowClass(f.resolvedStatus)}">
+        <td><span class="badge badge-arr">ARR</span></td>
+        <td><strong>${f.flightNumber}</strong></td>
+        <td>${f.airline}</td>
+        <td>${airport}</td>
+        <td>${formatTime(f.scheduledTime)}</td>
+        <td><span class="status-pill ${pillClass(f.resolvedStatus)}">${label}</span></td>
+      </tr>`;
+  }).join("");
+
+  const table = document.createElement("table");
+  table.className = "flight-board";
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Flight</th>
+        <th>Airline</th>
+        <th>${"Origin"}</th>
+        <th>Scheduled (ET)</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>`;
+  display(table);
+}
+return {flights,torontoDateKeyForList,formatTime,pillClass,rowClass,statusLabel,now,todayKeyForList,departuresUntilEndOfToday,arrivalsUntilEndOfToday,arrHeading};
 }});
 
-define({id: "3283314e", inputs: ["data","departuresUntilEndOfToday","display"], body: (data,departuresUntilEndOfToday,display) => {
+define({id: "1c16df86", inputs: ["data","departuresUntilEndOfToday","arrivalsUntilEndOfToday","display"], body: (data,departuresUntilEndOfToday,arrivalsUntilEndOfToday,display) => {
 if (data.fetchedAt) {
   const meta = document.createElement("p");
   meta.className = "meta";
@@ -1091,7 +1150,7 @@ if (data.fetchedAt) {
     timeZone: "America/Toronto",
     dateStyle: "medium",
     timeStyle: "short",
-  })} ET  ·  ${departuresUntilEndOfToday.length} departure flight${departuresUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
+  })} ET  ·  ${departuresUntilEndOfToday.length} departure flight${departuresUntilEndOfToday.length !== 1 ? "s" : ""} and ${arrivalsUntilEndOfToday.length} arrival flight${arrivalsUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
   display(meta);
 }
 }});
@@ -1355,11 +1414,11 @@ Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="no
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
 <div class="observablehq observablehq--block"><!--:cade2109:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
-<div class="observablehq observablehq--block"><!--:27dedcbd:--></div>
-<div class="observablehq observablehq--block"><!--:3283314e:--></div>
+<div class="observablehq observablehq--block"><!--:079a42ff:--></div>
+<div class="observablehq observablehq--block"><!--:1c16df86:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T21:26:18">Mar 28, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T21:30:01">Mar 28, 2026</a>.</div>
 </footer>
 </div>
 </body>

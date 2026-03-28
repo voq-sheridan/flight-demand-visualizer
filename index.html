@@ -18,14 +18,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.bc426d92.json","lastModified":1774734821700,"size":28694});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.44e1a11b.json","lastModified":1774735154974,"size":29011});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "51243c7f", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","availableDateKeys","currentDateKey","currentStatusFilter","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
+define({id: "2de0cac3", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","availableDateKeys","currentDateKey","currentStatusFilter","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
 // Render live summary, busyness chart and auto-refresh (2 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 let d3;
@@ -78,7 +78,7 @@ function buildUI() {
   // Chart title
   const title = document.createElement('div');
   title.className = 'chart-title';
-  title.textContent = 'Flight volume by hour — past 12h + upcoming flights';
+  title.textContent = 'Flight volume by hour — past 12h + next 6h';
 
   // Selected date heading
   const dateHeading = document.createElement('div');
@@ -971,7 +971,7 @@ if (data.error) {
 }
 }});
 
-define({id: "adc7a5d0", inputs: ["data","display"], outputs: ["flights","torontoDateKeyForList","formatTime","pillClass","rowClass","statusLabel","now","past12Hours","todayKeyForList","departuresPast12hAndUntilEndOfToday","arrivalsPast12hAndUntilEndOfToday","arrHeading"], body: (data,display) => {
+define({id: "579c0817", inputs: ["data","display"], outputs: ["flights","torontoDateKeyForList","formatTime","pillClass","rowClass","statusLabel","now","past12Hours","next6Hours","departuresPast12hAndNext6h","arrivalsPast12hAndNext6h","arrHeading"], body: (data,display) => {
 const flights = data.flights ?? [];
 
 function torontoDateKeyForList(date) {
@@ -1022,43 +1022,43 @@ function statusLabel(resolvedStatus, rawStatus, delay) {
 
 const now = new Date();
 const past12Hours = new Date(now.getTime() - 12 * 60 * 60 * 1000);
-const todayKeyForList = torontoDateKeyForList(now);
-const departuresPast12hAndUntilEndOfToday = flights
+const next6Hours = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+const departuresPast12hAndNext6h = flights
   .filter((f) => {
     if (f.type !== "departure") return false;
     const when = new Date(f.scheduledTime);
     if (Number.isNaN(when.getTime())) return false;
     const isPast12h = when >= past12Hours && when <= now;
-    const isUpcomingToday = when >= now && torontoDateKeyForList(when) === todayKeyForList;
-    return isPast12h || isUpcomingToday;
+    const isUpcoming6h = when >= now && when <= next6Hours;
+    return isPast12h || isUpcoming6h;
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
-const arrivalsPast12hAndUntilEndOfToday = flights
+const arrivalsPast12hAndNext6h = flights
   .filter((f) => {
     if (f.type !== "arrival") return false;
     const when = new Date(f.scheduledTime);
     if (Number.isNaN(when.getTime())) return false;
     const isPast12h = when >= past12Hours && when <= now;
-    const isUpcomingToday = when >= now && torontoDateKeyForList(when) === todayKeyForList;
-    return isPast12h || isUpcomingToday;
+    const isUpcoming6h = when >= now && when <= next6Hours;
+    return isPast12h || isUpcoming6h;
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
-if (departuresPast12hAndUntilEndOfToday.length === 0 && !data.error) {
+if (departuresPast12hAndNext6h.length === 0 && !data.error) {
   const depHeading = document.createElement("div");
   depHeading.className = "heatmap-section-title";
-  depHeading.textContent = "Departure List (Past 12 Hours + Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
+  depHeading.textContent = "Departure List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET · Best-effort OpenSky data)";
   display(depHeading);
 
   const box = document.createElement("div");
   box.className = "empty-box";
-  box.textContent = "No departure flights found in the past 12 hours or from now until end of today (ET).";
+  box.textContent = "No departure flights found in the past 12 hours or in the next 6 hours (ET).";
   display(box);
-} else if (departuresPast12hAndUntilEndOfToday.length > 0) {
+} else if (departuresPast12hAndNext6h.length > 0) {
   const heading = document.createElement("div");
   heading.className = "heatmap-section-title";
-  heading.textContent = "Departure List (Past 12 Hours + Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
+  heading.textContent = "Departure List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET · Best-effort OpenSky data)";
   display(heading);
 
   const hint = document.createElement("div");
@@ -1066,7 +1066,7 @@ if (departuresPast12hAndUntilEndOfToday.length === 0 && !data.error) {
   hint.textContent = "OpenSky does not guarantee a complete future timetable; this list shows all departures currently available in the feed.";
   display(hint);
 
-  const rows = departuresPast12hAndUntilEndOfToday.map((f) => {
+  const rows = departuresPast12hAndNext6h.map((f) => {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
@@ -1102,16 +1102,16 @@ if (departuresPast12hAndUntilEndOfToday.length === 0 && !data.error) {
 const arrHeading = document.createElement("div");
 arrHeading.className = "heatmap-section-title";
 arrHeading.style.marginTop = "1rem";
-arrHeading.textContent = "Arrival List (Past 12 Hours + Live (Current time) → End of Today, ET · Best-effort OpenSky data)";
+arrHeading.textContent = "Arrival List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET · Best-effort OpenSky data)";
 display(arrHeading);
 
-if (arrivalsPast12hAndUntilEndOfToday.length === 0 && !data.error) {
+if (arrivalsPast12hAndNext6h.length === 0 && !data.error) {
   const box = document.createElement("div");
   box.className = "empty-box";
-  box.textContent = "No arrival flights found in the past 12 hours or from now until end of today (ET).";
+  box.textContent = "No arrival flights found in the past 12 hours or in the next 6 hours (ET).";
   display(box);
-} else if (arrivalsPast12hAndUntilEndOfToday.length > 0) {
-  const rows = arrivalsPast12hAndUntilEndOfToday.map((f) => {
+} else if (arrivalsPast12hAndNext6h.length > 0) {
+  const rows = arrivalsPast12hAndNext6h.map((f) => {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
@@ -1143,10 +1143,10 @@ if (arrivalsPast12hAndUntilEndOfToday.length === 0 && !data.error) {
     <tbody>${rows}</tbody>`;
   display(table);
 }
-return {flights,torontoDateKeyForList,formatTime,pillClass,rowClass,statusLabel,now,past12Hours,todayKeyForList,departuresPast12hAndUntilEndOfToday,arrivalsPast12hAndUntilEndOfToday,arrHeading};
+return {flights,torontoDateKeyForList,formatTime,pillClass,rowClass,statusLabel,now,past12Hours,next6Hours,departuresPast12hAndNext6h,arrivalsPast12hAndNext6h,arrHeading};
 }});
 
-define({id: "cdbb096a", inputs: ["data","departuresPast12hAndUntilEndOfToday","arrivalsPast12hAndUntilEndOfToday","display"], body: (data,departuresPast12hAndUntilEndOfToday,arrivalsPast12hAndUntilEndOfToday,display) => {
+define({id: "553e3ce5", inputs: ["data","departuresPast12hAndNext6h","arrivalsPast12hAndNext6h","display"], body: (data,departuresPast12hAndNext6h,arrivalsPast12hAndNext6h,display) => {
 if (data.fetchedAt) {
   const meta = document.createElement("p");
   meta.className = "meta";
@@ -1154,7 +1154,7 @@ if (data.fetchedAt) {
     timeZone: "America/Toronto",
     dateStyle: "medium",
     timeStyle: "short",
-  })} ET  ·  ${departuresPast12hAndUntilEndOfToday.length} departure flight${departuresPast12hAndUntilEndOfToday.length !== 1 ? "s" : ""} and ${arrivalsPast12hAndUntilEndOfToday.length} arrival flight${arrivalsPast12hAndUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
+  })} ET  ·  ${departuresPast12hAndNext6h.length} departure flight${departuresPast12hAndNext6h.length !== 1 ? "s" : ""} and ${arrivalsPast12hAndNext6h.length} arrival flight${arrivalsPast12hAndNext6h.length !== 1 ? "s" : ""} shown`;
   display(meta);
 }
 }});
@@ -1169,7 +1169,7 @@ if (data.fetchedAt) {
 </aside>
 <main id="observablehq-main" class="observablehq">
 <h1 id="toronto-pearson-international-airport-yyz-flights-monitor" tabindex="-1"><a class="observablehq-header-anchor" href="#toronto-pearson-international-airport-yyz-flights-monitor">✈ Toronto Pearson International Airport (YYZ)— Flights Monitor</a></h1>
-<p>Recent and upcoming flights (past 12 hours + upcoming windows) for departures and arrivals.<br>
+<p>Recent and near-term flights (past 12 hours + next 6 hours) for departures and arrivals.<br>
 Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="noopener noreferrer">OpenSky Network</a>.</p>
 <link rel="icon" href="./_file/favicon.e761dfd5.svg" type="image/svg+xml">
 <style>
@@ -1416,13 +1416,13 @@ Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="no
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
-<div class="observablehq observablehq--block"><!--:51243c7f:--></div>
+<div class="observablehq observablehq--block"><!--:2de0cac3:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
-<div class="observablehq observablehq--block"><!--:adc7a5d0:--></div>
-<div class="observablehq observablehq--block"><!--:cdbb096a:--></div>
+<div class="observablehq observablehq--block"><!--:579c0817:--></div>
+<div class="observablehq observablehq--block"><!--:553e3ce5:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T21:53:34">Mar 28, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T21:59:05">Mar 28, 2026</a>.</div>
 </footer>
 </div>
 </body>

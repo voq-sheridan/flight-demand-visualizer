@@ -254,14 +254,21 @@ async function fetchEndpoint(url, label) {
 
 async function fetchAirportFlightsWithWindowFallback(endpoint, label, unixNow) {
   const endpointName = endpoint === 'departure' ? 'departures' : 'arrivals';
-  const horizonsSec = [24, 48, 72].map((h) => h * 3600);
-  const candidates = horizonsSec.flatMap((horizon) => {
-    const end = unixNow + horizon;
-    return [
-      `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow}&end=${end}`,
-      `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow}&end=${end}`
-    ];
-  });
+  const candidates = [
+    // Include historical window for heatmap context (past 12h).
+    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow}`,
+    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow}`,
+    // Mixed rolling window: past 12h + next 24h.
+    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow + 24 * 3600}`,
+    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow + 24 * 3600}`,
+    // Future-heavy windows for volume.
+    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow}&end=${unixNow + 24 * 3600}`,
+    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow}&end=${unixNow + 24 * 3600}`,
+    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow}&end=${unixNow + 48 * 3600}`,
+    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow}&end=${unixNow + 48 * 3600}`,
+    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow}&end=${unixNow + 72 * 3600}`,
+    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow}&end=${unixNow + 72 * 3600}`
+  ];
 
   const merged = [];
   const seenRaw = new Set();
@@ -279,11 +286,12 @@ async function fetchAirportFlightsWithWindowFallback(endpoint, label, unixNow) {
   return merged;
 }
 
-function keepFutureFlights(flights, unixNow) {
-  const nowMs = unixNow * 1000;
+function keepRollingWindowFlights(flights, unixNow) {
+  const startMs = (unixNow - 12 * 3600) * 1000;
+  const endMs = (unixNow + 72 * 3600) * 1000;
   return flights.filter((f) => {
     const ts = Date.parse(f.scheduledTime);
-    return Number.isFinite(ts) && ts >= nowMs;
+    return Number.isFinite(ts) && ts >= startMs && ts <= endMs;
   });
 }
 
@@ -366,7 +374,7 @@ for (const item of fallbackFlights) {
   }
 }
 
-const flights = keepFutureFlights(Array.from(dedupe.values()), unixNow).sort(
+const flights = keepRollingWindowFlights(Array.from(dedupe.values()), unixNow).sort(
   (a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime)
 );
 

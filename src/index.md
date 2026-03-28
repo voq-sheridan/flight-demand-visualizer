@@ -4,7 +4,7 @@ title: Toronto Pearson Airport — Flight Activity
 
 # ✈ Toronto Pearson International Airport (YYZ)— Flights Monitor
 
-Live and upcoming flights for the next 24 hours (departures and arrivals).  
+Recent and upcoming flights (past 12 hours + upcoming windows) for departures and arrivals.  
 Data sourced from [OpenSky Network](https://opensky-network.org/).
 
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
@@ -293,7 +293,7 @@ function buildUI() {
   // Chart title
   const title = document.createElement('div');
   title.className = 'chart-title';
-  title.textContent = 'Flight volume by hour — next 24 hours';
+  title.textContent = 'Flight volume by hour — past 12h + upcoming flights';
 
   // Selected date heading
   const dateHeading = document.createElement('div');
@@ -302,7 +302,7 @@ function buildUI() {
   // Subtitle
   const sub = document.createElement('div');
   sub.className = 'chart-sub';
-  sub.textContent = 'GitHub-style heatmaps for today and tomorrow. Darker red indicates higher staffing pressure.';
+  sub.textContent = 'GitHub-style heatmaps for today and tomorrow using recent + upcoming flights. Darker red indicates higher staffing pressure.';
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';

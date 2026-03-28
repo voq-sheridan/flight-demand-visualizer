@@ -18,14 +18,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.41a20277.json","lastModified":1774732772013,"size":35635});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.41cb4364.json","lastModified":1774732972185,"size":35704});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "39e689d2", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","availableDateKeys","currentDateKey","currentStatusFilter","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
+define({id: "c7dbc390", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","availableDateKeys","currentDateKey","currentStatusFilter","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
 // Render live summary, busyness chart and auto-refresh (2 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 let d3;
@@ -58,9 +58,14 @@ function buildUI() {
     active: createMetricCard('Active', '—', 'metric-active-card'),
     delayed: createMetricCard('Delayed', '—', 'metric-delayed-card'),
     scheduled: createMetricCard('Scheduled', '—', 'metric-scheduled-card'),
-    total: createMetricCard('Total flights', '—', 'metric-total-card')
+    total: createMetricCard('Total flights (selected date)', '—', 'metric-total-card')
   };
   Object.values(metrics).forEach(c => summaryPanel.appendChild(c.card));
+
+  const snapshotTotals = document.createElement('div');
+  snapshotTotals.className = 'snapshot-totals';
+  snapshotTotals.textContent = 'Snapshot totals (all loaded dates) — Total: — · Departures: — · Arrivals: —';
+  summaryPanel.appendChild(snapshotTotals);
 
   const departureInsightBox = document.createElement('div');
   departureInsightBox.className = 'staff-insight-box staff-state-upcoming';
@@ -147,6 +152,7 @@ function buildUI() {
   return {
     wrapper,
     summaryPanel,
+  snapshotTotals,
     departureInsightBox,
     arrivalInsightBox,
     metrics,
@@ -175,6 +181,7 @@ function createMetricCard(label, num, variantClass) {
 const {
   wrapper,
   summaryPanel,
+  snapshotTotals,
   departureInsightBox,
   arrivalInsightBox,
   metrics,
@@ -733,6 +740,19 @@ function updateCountdown() {
 
 const countdownTimer = setInterval(updateCountdown, 1000);
 
+function updateSnapshotTotals(srcData) {
+  const flights = Array.isArray(srcData?.flights) ? srcData.flights : [];
+  const total = flights.length;
+  const departures = Number.isFinite(srcData?.totalDepartures)
+    ? srcData.totalDepartures
+    : flights.filter((f) => f.type === 'departure').length;
+  const arrivals = Number.isFinite(srcData?.totalArrivals)
+    ? srcData.totalArrivals
+    : flights.filter((f) => f.type === 'arrival').length;
+
+  snapshotTotals.textContent = `Snapshot totals (all loaded dates) — Total: ${total} · Departures: ${departures} · Arrivals: ${arrivals}`;
+}
+
 function renderTable(flightsForDate) {
   tableContainer.innerHTML = '';
   const filtered = flightsForDate.filter(f =>
@@ -835,6 +855,7 @@ function applyNewData(srcData) {
   allFlights = srcData.flights ?? [];
   fetchedAt = srcData.fetchedAt ? new Date(srcData.fetchedAt) : null;
   lastFetchedAtIso = srcData.fetchedAt || lastFetchedAtIso;
+  updateSnapshotTotals(srcData);
   recomputeDateOptions();
   renderForSelection();
 }
@@ -937,7 +958,7 @@ if (typeof invalidation !== 'undefined') {
   });
 }
 
-return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,departureInsightBox,arrivalInsightBox,metrics,chartCard,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,torontoHourMinute,torontoMinutesNow,formatClock12,formatClockFromMinutes,getPeakHourForToday,applyInsightState,renderDepartureInsightBox,renderArrivalInsightBox,buildBinsForDate,heatmapColor,parseDateKey,shiftDateKey,getHeatmapDateKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,lastFetchedAtIso,availableDateKeys,currentDateKey,currentStatusFilter,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,isPageActive,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,renderTable,renderForSelection,applyNewData,fetchLatestFlightsData,runRefreshCycle,refreshTimer,onVisibilityChangeHandler,beforeUnloadHandler};
+return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,snapshotTotals,departureInsightBox,arrivalInsightBox,metrics,chartCard,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,torontoHourMinute,torontoMinutesNow,formatClock12,formatClockFromMinutes,getPeakHourForToday,applyInsightState,renderDepartureInsightBox,renderArrivalInsightBox,buildBinsForDate,heatmapColor,parseDateKey,shiftDateKey,getHeatmapDateKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,lastFetchedAtIso,availableDateKeys,currentDateKey,currentStatusFilter,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,isPageActive,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,updateSnapshotTotals,renderTable,renderForSelection,applyNewData,fetchLatestFlightsData,runRefreshCycle,refreshTimer,onVisibilityChangeHandler,beforeUnloadHandler};
 }});
 
 define({id: "89e04ded", inputs: ["data","display"], body: (data,display) => {
@@ -1073,6 +1094,19 @@ Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="no
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+  .snapshot-totals {
+    flex: 1 1 100%;
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #334155;
+    margin-top: 0.25rem;
+    padding: 0.35rem 0.55rem;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
   }
   .pill-active    { background: #bbf7d0; color: #14532d; }
   .pill-delayed   { background: #fed7aa; color: #7c2d12; }
@@ -1283,13 +1317,13 @@ Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="no
   <span class="legend-item"><span class="legend-dot dot-blue"></span> Scheduled</span>
 </div>
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
-<div class="observablehq observablehq--block"><!--:39e689d2:--></div>
+<div class="observablehq observablehq--block"><!--:c7dbc390:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
 <div class="observablehq observablehq--block"><!--:a0b6df53:--></div>
 <div class="observablehq observablehq--block"><!--:688436bd:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T21:19:24">Mar 28, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T21:22:44">Mar 28, 2026</a>.</div>
 </footer>
 </div>
 </body>

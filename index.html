@@ -18,7 +18,7 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.1faac893.json","lastModified":1774735363798,"size":43606});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.f89a0a67.json","lastModified":1774735504803,"size":44442});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
@@ -971,7 +971,7 @@ if (data.error) {
 }
 }});
 
-define({id: "579c0817", inputs: ["data","display"], outputs: ["flights","torontoDateKeyForList","formatTime","pillClass","rowClass","statusLabel","now","past12Hours","next6Hours","departuresPast12hAndNext6h","arrivalsPast12hAndNext6h","arrHeading"], body: (data,display) => {
+define({id: "355b9be8", inputs: ["data","display"], outputs: ["flights","torontoDateKeyForList","formatTime","pillClass","rowClass","statusLabel","now","past12Hours","next6Hours","departuresPast12hAndNext6h","arrivalsPast12hAndNext6h","arrHeading"], body: (data,display) => {
 const flights = data.flights ?? [];
 
 function torontoDateKeyForList(date) {
@@ -1070,7 +1070,6 @@ if (departuresPast12hAndNext6h.length === 0 && !data.error) {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
-    const label = statusLabel(f.resolvedStatus, f.status, f.delay);
     return `
       <tr class="${rowClass(f.resolvedStatus)}">
         <td><span class="badge badge-dep">DEP</span></td>
@@ -1078,7 +1077,6 @@ if (departuresPast12hAndNext6h.length === 0 && !data.error) {
         <td>${f.airline}</td>
         <td>${airport}</td>
         <td>${formatTime(f.scheduledTime)}</td>
-        <td><span class="status-pill ${pillClass(f.resolvedStatus)}">${label}</span></td>
       </tr>`;
   }).join("");
 
@@ -1092,7 +1090,6 @@ if (departuresPast12hAndNext6h.length === 0 && !data.error) {
         <th>Airline</th>
         <th>${"Destination"}</th>
         <th>Scheduled (ET)</th>
-        <th>Status</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>`;
@@ -1115,7 +1112,6 @@ if (arrivalsPast12hAndNext6h.length === 0 && !data.error) {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
-    const label = statusLabel(f.resolvedStatus, f.status, f.delay);
     return `
       <tr class="${rowClass(f.resolvedStatus)}">
         <td><span class="badge badge-arr">ARR</span></td>
@@ -1123,7 +1119,6 @@ if (arrivalsPast12hAndNext6h.length === 0 && !data.error) {
         <td>${f.airline}</td>
         <td>${airport}</td>
         <td>${formatTime(f.scheduledTime)}</td>
-        <td><span class="status-pill ${pillClass(f.resolvedStatus)}">${label}</span></td>
       </tr>`;
   }).join("");
 
@@ -1137,7 +1132,6 @@ if (arrivalsPast12hAndNext6h.length === 0 && !data.error) {
         <th>Airline</th>
         <th>${"Origin"}</th>
         <th>Scheduled (ET)</th>
-        <th>Status</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>`;
@@ -1418,11 +1412,11 @@ Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="no
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
 <div class="observablehq observablehq--block"><!--:2de0cac3:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
-<div class="observablehq observablehq--block"><!--:579c0817:--></div>
+<div class="observablehq observablehq--block"><!--:355b9be8:--></div>
 <div class="observablehq observablehq--block"><!--:553e3ce5:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T22:02:35">Mar 28, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-28T22:04:55">Mar 28, 2026</a>.</div>
 </footer>
 </div>
 </body>

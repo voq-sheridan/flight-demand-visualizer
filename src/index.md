@@ -227,7 +227,7 @@ function buildUI() {
   title.className = 'chart-title';
   title.textContent = 'Flight volume by hour — next 24 hours';
 
-  // Controls row: date selector + status filter
+  // Controls row: date selector
   const controlRow = document.createElement('div');
   controlRow.className = 'control-row';
 
@@ -239,23 +239,7 @@ function buildUI() {
   dateGroup.appendChild(dateLabel);
   dateGroup.appendChild(dateSelect);
 
-  const statusGroup = document.createElement('div');
-  statusGroup.className = 'control-group';
-  const statusLabel = document.createElement('span');
-  statusLabel.textContent = 'Filter status:';
-  const statusSelect = document.createElement('select');
-  statusSelect.innerHTML = `
-    <option value="all">All</option>
-    <option value="active">Active</option>
-    <option value="delayed">Delayed</option>
-    <option value="landed">Landed</option>
-    <option value="cancelled">Cancelled</option>
-    <option value="scheduled">Scheduled</option>`;
-  statusGroup.appendChild(statusLabel);
-  statusGroup.appendChild(statusSelect);
-
   controlRow.appendChild(dateGroup);
-  controlRow.appendChild(statusGroup);
 
   // Selected date heading
   const dateHeading = document.createElement('div');
@@ -332,7 +316,6 @@ function buildUI() {
     metrics,
     chartCard,
     dateSelect,
-    statusSelect,
     dateHeading,
     depHeatmapSvg,
     depHeatmapContainer,
@@ -361,7 +344,6 @@ const {
   metrics,
   chartCard,
   dateSelect,
-  statusSelect,
   dateHeading,
   depHeatmapSvg,
   depHeatmapContainer,
@@ -573,7 +555,8 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('x', margin.left - 10)
     .attr('y', (_, i) => margin.top + i * (cellSize + gap) + cellSize / 2 + 4)
     .attr('text-anchor', 'end')
-  .style('font-weight', (d) => (d === todayKey ? '700' : '400'))
+    .style('font-weight', (d) => (d === todayKey ? '700' : '400'))
+    .style('font-size', (d) => (d === todayKey ? '1rem' : '0.72rem'))
     .text((d) => {
       const dateObj = parseDateKey(d);
       return dateObj.toLocaleDateString('en-CA', {
@@ -611,7 +594,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('height', cellSize)
     .attr('rx', 4)
     .attr('ry', 4)
-  .attr('fill', (d) => heatmapColor(d.total))
+    .attr('fill', (d) => heatmapColor(d.total))
     .style('cursor', 'pointer')
     .on('mousemove', (event, d) => {
       const dateObj = parseDateKey(d.dateKey);
@@ -836,15 +819,22 @@ function renderForSelection() {
   drawDirectionalHeatmap(depHeatmapSvg, depHeatmapContainer, depHeatmapData, sharedMax);
   drawDirectionalHeatmap(arrHeatmapSvg, arrHeatmapContainer, arrHeatmapData, sharedMax);
 
-  // selected date heading
-  const d = new Date(`${currentDateKey}T00:00:00`);
-  dateHeading.textContent = d.toLocaleDateString('en-CA', {
-    timeZone: 'America/Toronto',
+  // selected date heading + current Toronto time
+  const d = parseDateKey(currentDateKey);
+  const dateText = d.toLocaleDateString('en-CA', {
+    timeZone: 'UTC',
     weekday: 'long',
     year: 'numeric',
     month: 'short',
     day: 'numeric'
   });
+  const currentTimeEt = new Date().toLocaleTimeString('en-CA', {
+    timeZone: 'America/Toronto',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  dateHeading.textContent = `${dateText} · ${currentTimeEt} ET`;
 
   // staffing recommendation banner
   if (peakBinGlobal && peakBinGlobal.total > 0) {
@@ -885,11 +875,6 @@ async function fetchLatestFlightsData() {
 // Wire up controls
 dateSelect.addEventListener('change', () => {
   currentDateKey = dateSelect.value;
-  renderForSelection();
-});
-
-statusSelect.addEventListener('change', () => {
-  currentStatusFilter = statusSelect.value;
   renderForSelection();
 });
 

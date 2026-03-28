@@ -41,6 +41,10 @@ function safeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function toIso(ts) {
   if (!Number.isFinite(ts)) return null;
   return new Date(ts * 1000).toISOString();
@@ -64,7 +68,7 @@ function inferTypeFromState(state) {
   return 'departure';
 }
 
-async function fetchStatesFallback() {
+async function fetchStatesFallback(unixNow) {
   const bbox = new URLSearchParams({
     lamin: '43.4',
     lomin: '-79.9',
@@ -80,7 +84,7 @@ async function fetchStatesFallback() {
       return [];
     }
     const json = await res.json();
-    const snapshotTs = Number(json?.time) || Math.floor(Date.now() / 1000);
+  const snapshotTs = Number(json?.time) || unixNow;
     const states = safeArray(json?.states);
 
     return states
@@ -90,13 +94,15 @@ async function fetchStatesFallback() {
 
         const callsign = String(s?.[1] || '').trim();
         const icao24 = String(s?.[0] || '').trim();
-        const observedTs = s?.[3] || s?.[4] || snapshotTs;
-        const scheduledTime = toIso(observedTs);
+        const projectedTs = type === 'departure'
+          ? snapshotTs + 45 * 60
+          : snapshotTs + 30 * 60;
+        const scheduledTime = toIso(projectedTs);
         if (!scheduledTime) return null;
 
         const flightNumber = callsign || icao24.toUpperCase() || 'N/A';
         return {
-          dedupeKey: `${icao24 || 'unknown'}|${observedTs || 'unknown'}`,
+          dedupeKey: `${icao24 || 'unknown'}|${projectedTs || 'unknown'}`,
           flight: {
             type,
             flightNumber,
@@ -119,28 +125,76 @@ async function fetchStatesFallback() {
 }
 
 async function fetchEndpoint(url, label) {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) {
-      process.stderr.write(`OpenSky ${label} request failed with HTTP ${res.status}\n`);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        if ((res.status === 429 || res.status === 503) && attempt < 2) {
+          await sleep((attempt + 1) * 1200);
+          continue;
+        }
+        process.stderr.write(`OpenSky ${label} request failed with HTTP ${res.status}\n`);
+        return [];
+      }
+      const json = await res.json();
+      return safeArray(json);
+    } catch (err) {
+      if (attempt < 2) {
+        await sleep((attempt + 1) * 1200);
+        continue;
+      }
+      process.stderr.write(`OpenSky ${label} request error: ${err.message}\n`);
       return [];
     }
-    const json = await res.json();
-    return safeArray(json);
-  } catch (err) {
-    process.stderr.write(`OpenSky ${label} request error: ${err.message}\n`);
-    return [];
   }
+
+  return [];
+}
+
+async function fetchAirportFlightsWithWindowFallback(endpoint, label, unixNow) {
+  const endpointName = endpoint === 'departure' ? 'departures' : 'arrivals';
+  const horizonsSec = [24, 48, 72].map((h) => h * 3600);
+  const candidates = horizonsSec.flatMap((horizon) => {
+    const end = unixNow + horizon;
+    return [
+      `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow}&end=${end}`,
+      `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow}&end=${end}`
+    ];
+  });
+
+  const merged = [];
+  const seenRaw = new Set();
+
+  for (let i = 0; i < candidates.length; i++) {
+    const rows = await fetchEndpoint(candidates[i], `${label} (candidate ${i + 1})`);
+    for (const row of rows) {
+      const rawKey = `${row?.icao24 || 'unknown'}|${row?.firstSeen || 'na'}|${row?.lastSeen || 'na'}|${(row?.callsign || '').trim()}`;
+      if (seenRaw.has(rawKey)) continue;
+      seenRaw.add(rawKey);
+      merged.push(row);
+    }
+  }
+
+  return merged;
+}
+
+function keepFutureFlights(flights, unixNow) {
+  const nowMs = unixNow * 1000;
+  return flights.filter((f) => {
+    const ts = Date.parse(f.scheduledTime);
+    return Number.isFinite(ts) && ts >= nowMs;
+  });
 }
 
 function mapDeparture(raw) {
   const callsign = (raw?.callsign || '').trim();
-  const firstSeenIso = toIso(raw?.firstSeen);
+  const baseTs = Number.isFinite(raw?.firstSeen) ? raw.firstSeen : raw?.lastSeen;
+  const firstSeenIso = toIso(baseTs);
   const lastSeenIso = toIso(raw?.lastSeen);
   if (!callsign || !firstSeenIso) return null;
 
   return {
-    dedupeKey: `${raw?.icao24 || 'unknown'}|${raw?.firstSeen || 'unknown'}`,
+    dedupeKey: `${raw?.icao24 || 'unknown'}|${baseTs || 'unknown'}`,
     flight: {
       type: 'departure',
       flightNumber: callsign,
@@ -160,11 +214,12 @@ function mapDeparture(raw) {
 function mapArrival(raw) {
   const callsign = (raw?.callsign || '').trim();
   const firstSeenIso = toIso(raw?.firstSeen);
-  const lastSeenIso = toIso(raw?.lastSeen);
+  const baseTs = Number.isFinite(raw?.lastSeen) ? raw.lastSeen : raw?.firstSeen;
+  const lastSeenIso = toIso(baseTs);
   if (!callsign || !lastSeenIso) return null;
 
   return {
-    dedupeKey: `${raw?.icao24 || 'unknown'}|${raw?.firstSeen || 'unknown'}`,
+    dedupeKey: `${raw?.icao24 || 'unknown'}|${raw?.firstSeen || baseTs || 'unknown'}`,
     flight: {
       type: 'arrival',
       flightNumber: callsign,
@@ -182,14 +237,10 @@ function mapArrival(raw) {
 }
 
 const unixNow = Math.floor(Date.now() / 1000);
-const unix24hAgo = unixNow - 86400;
-
-const departuresUrl = `${OPEN_SKY_BASE}/flights/departure?airport=CYYZ&begin=${unix24hAgo}&end=${unixNow}`;
-const arrivalsUrl = `${OPEN_SKY_BASE}/flights/arrival?airport=CYYZ&begin=${unix24hAgo}&end=${unixNow}`;
 
 const [departuresRaw, arrivalsRaw] = await Promise.all([
-  fetchEndpoint(departuresUrl, 'departures'),
-  fetchEndpoint(arrivalsUrl, 'arrivals')
+  fetchAirportFlightsWithWindowFallback('departure', 'departures', unixNow),
+  fetchAirportFlightsWithWindowFallback('arrival', 'arrivals', unixNow)
 ]);
 
 const mappedDepartures = safeArray(departuresRaw)
@@ -207,16 +258,14 @@ for (const item of [...mappedDepartures, ...mappedArrivals]) {
   }
 }
 
-if (dedupe.size === 0) {
-  const fallbackFlights = await fetchStatesFallback();
-  for (const item of fallbackFlights) {
-    if (!dedupe.has(item.dedupeKey)) {
-      dedupe.set(item.dedupeKey, item.flight);
-    }
+const fallbackFlights = await fetchStatesFallback(unixNow);
+for (const item of fallbackFlights) {
+  if (!dedupe.has(item.dedupeKey)) {
+    dedupe.set(item.dedupeKey, item.flight);
   }
 }
 
-const flights = Array.from(dedupe.values()).sort(
+const flights = keepFutureFlights(Array.from(dedupe.values()), unixNow).sort(
   (a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime)
 );
 

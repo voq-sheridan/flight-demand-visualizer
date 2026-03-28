@@ -240,7 +240,7 @@ Data sourced from [OpenSky Network](https://opensky-network.org/).
 </div>
 
 ```js
-const data = await FileAttachment("data/flights.json").json();
+const data = await FileAttachment("./data/flights.json").json();
 ```
 
 ```js
@@ -888,7 +888,6 @@ let countdownSpan = null;
 const REFRESH_MS = 10 * 60 * 1000;
 let nextRefreshAt = Date.now() + REFRESH_MS;
 let isPageActive = typeof document === 'undefined' ? true : document.visibilityState === 'visible';
-let refreshNeedsReload = false;
 
 function recomputeDateOptions() {
   const todayDateKey = torontoDateKey(new Date());
@@ -936,11 +935,6 @@ function updateMeta(visibleCount) {
 
 function updateCountdown() {
   if (!countdownSpan || !nextRefreshAt) return;
-
-  if (refreshNeedsReload) {
-    countdownSpan.textContent = ' · Auto-refresh paused (new deployment detected — reload page)';
-    return;
-  }
 
   if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
     countdownSpan.textContent = ' · Auto-refresh paused while tab inactive';
@@ -1065,13 +1059,14 @@ function applyNewData(srcData) {
 
 async function fetchLatestFlightsData() {
   // Use only the framework-resolved file URL to avoid any speculative 404 requests.
-  const attachmentUrl = await FileAttachment("data/flights.json").url();
+  const attachmentUrl = await FileAttachment("./data/flights.json").url();
   const url = attachmentUrl.includes('?')
     ? `${attachmentUrl}&_=${Date.now()}`
     : `${attachmentUrl}?_=${Date.now()}`;
 
   const resp = await fetch(url, { cache: 'no-store' });
   if (resp.status === 404) {
+    // Transient in-flight deploy mismatch; skip this cycle and retry next interval.
     return null;
   }
   if (!resp.ok) {
@@ -1088,13 +1083,11 @@ try {
 }
 
 async function runRefreshCycle() {
-  if (!isPageActive || refreshNeedsReload) return;
+  if (!isPageActive) return;
 
   try {
     const json = await fetchLatestFlightsData();
     if (!json) {
-      refreshNeedsReload = true;
-      updateCountdown();
       return;
     }
     const incomingFetchedAt = json?.fetchedAt || null;

@@ -124,14 +124,67 @@ Data sourced from [AviationStack](https://aviationstack.com/).
     font-size: 0.85rem;
   }
 
-  .staff-banner {
+  .staff-insights {
     margin-top: 0.65rem;
-    padding: 0.5rem 0.65rem;
-    border-radius: 8px;
-    background: #fef3c7;
-    border-left: 4px solid #f59e0b;
-    font-size: 0.85rem;
+    display: grid;
+    gap: 0.55rem;
+    width: 100%;
+  }
+
+  .staff-insight-box {
+    border: 2px solid #60a5fa;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 0.82rem;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .staff-insight-box h4 {
+    margin: 0;
+    font-size: 0.84rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .staff-insight-box ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.1rem;
+  }
+
+  .staff-insight-box li {
+    margin: 0.25rem 0;
+    line-height: 1.35;
+  }
+
+  .staff-state-upcoming {
+    border-color: #60a5fa;
+    background: #eff6ff;
+    color: #1e3a8a;
+  }
+
+  .staff-state-active-departure {
+    border-color: #f59e0b;
+    background: #fffbeb;
     color: #92400e;
+  }
+
+  .staff-state-active-arrival {
+    border-color: #ef4444;
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  .staff-state-passed {
+    border-color: #9ca3af;
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  .staff-state-low {
+    border-color: #22c55e;
+    background: #ecfdf5;
+    color: #166534;
   }
 
   .date-heading {
@@ -216,11 +269,21 @@ function buildUI() {
   };
   Object.values(metrics).forEach(c => summaryPanel.appendChild(c.card));
 
-  // Staffing recommendation banner (below summary cards)
-  const staffBanner = document.createElement('div');
-  staffBanner.className = 'staff-banner';
-  staffBanner.textContent = 'Staffing insight will appear here once data is loaded.';
-  summaryPanel.appendChild(staffBanner);
+  // Staffing recommendation advisories (below summary cards)
+  const staffingInsights = document.createElement('div');
+  staffingInsights.className = 'staff-insights';
+
+  const departureInsightBox = document.createElement('div');
+  departureInsightBox.className = 'staff-insight-box staff-state-upcoming';
+  departureInsightBox.innerHTML = '<h4>🛫 Departure Staffing Advisory</h4><div>Loading departure staffing insight…</div>';
+
+  const arrivalInsightBox = document.createElement('div');
+  arrivalInsightBox.className = 'staff-insight-box staff-state-upcoming';
+  arrivalInsightBox.innerHTML = '<h4>🛬 Arrival Staffing Advisory</h4><div>Loading arrival staffing insight…</div>';
+
+  staffingInsights.appendChild(departureInsightBox);
+  staffingInsights.appendChild(arrivalInsightBox);
+  summaryPanel.appendChild(staffingInsights);
 
   // Chart title
   const title = document.createElement('div');
@@ -297,7 +360,8 @@ function buildUI() {
   return {
     wrapper,
     summaryPanel,
-    staffBanner,
+    departureInsightBox,
+    arrivalInsightBox,
     metrics,
     chartCard,
     dateHeading,
@@ -324,7 +388,8 @@ function createMetricCard(label, num, variantClass) {
 const {
   wrapper,
   summaryPanel,
-  staffBanner,
+  departureInsightBox,
+  arrivalInsightBox,
   metrics,
   chartCard,
   dateHeading,
@@ -361,12 +426,177 @@ function torontoHour(date) {
 }
 
 function hourLabelFromIndex(h) {
-  const base = new Date(Date.UTC(2000, 0, 1, h, 0, 0));
-  return base.toLocaleTimeString('en-CA', {
+  return formatClock12(h, 0);
+}
+
+function torontoHourMinute(date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Toronto',
-    hour: 'numeric',
-    hour12: true
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  }).formatToParts(date);
+
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
+  return { hour, minute };
+}
+
+function torontoMinutesNow() {
+  const { hour, minute } = torontoHourMinute(new Date());
+  return hour * 60 + minute;
+}
+
+function formatClock12(hour24, minute = 0) {
+  const normalizedHour = ((Math.floor(hour24) % 24) + 24) % 24;
+  const normalizedMinute = ((Math.floor(minute) % 60) + 60) % 60;
+  const period = normalizedHour >= 12 ? 'PM' : 'AM';
+  const hour12 = normalizedHour % 12 || 12;
+  return `${hour12}:${String(normalizedMinute).padStart(2, '0')} ${period}`;
+}
+
+function formatClockFromMinutes(totalMinutes) {
+  const minutesInDay = 24 * 60;
+  const normalized = ((Math.floor(totalMinutes) % minutesInDay) + minutesInDay) % minutesInDay;
+  const hour = Math.floor(normalized / 60);
+  const minute = normalized % 60;
+  return formatClock12(hour, minute);
+}
+
+function getPeakHourForToday(flights, mode) {
+  const todayDateKey = torontoDateKey(new Date());
+  const hourlyTotals = Array.from({ length: 24 }, () => 0);
+
+  flights.forEach((f) => {
+    if (mode === 'departures' && !isYYZDeparture(f)) return;
+    if (mode === 'arrivals' && !isYYZArrival(f)) return;
+
+    const when = toLocalDate(f.scheduledTime);
+    if (!when) return;
+    if (torontoDateKey(when) !== todayDateKey) return;
+
+    const hour = torontoHour(when);
+    if (hour < 0 || hour > 23) return;
+    hourlyTotals[hour] += 1;
   });
+
+  let peakHour = 0;
+  let peakTotal = hourlyTotals[0] || 0;
+  for (let hour = 1; hour < 24; hour++) {
+    if (hourlyTotals[hour] > peakTotal) {
+      peakTotal = hourlyTotals[hour];
+      peakHour = hour;
+    }
+  }
+
+  return { peakHour, peakTotal };
+}
+
+function applyInsightState(box, state, html) {
+  box.className = `staff-insight-box ${state}`;
+  box.innerHTML = html;
+}
+
+function renderDepartureInsightBox(box, flights) {
+  const { peakHour, peakTotal } = getPeakHourForToday(flights, 'departures');
+  if (peakTotal < 5) {
+    applyInsightState(
+      box,
+      'staff-state-low',
+      '<h4>🛫 Departure Staffing Advisory</h4><div><strong>Departure demand is low — standard staffing levels are sufficient.</strong></div>'
+    );
+    return;
+  }
+
+  const nowMinutes = torontoMinutesNow();
+  const peakStart = peakHour * 60;
+  const prepStart = peakStart - 210;
+  const prepEnd = peakStart - 30;
+  const deployBy = peakStart - 180;
+
+  if (nowMinutes >= peakStart + 60) {
+    applyInsightState(
+      box,
+      'staff-state-passed',
+      '<h4>🛫 Departure Staffing Advisory</h4><div><strong>Today\'s peak departure window has passed — monitor tomorrow\'s schedule.</strong></div>'
+    );
+    return;
+  }
+
+  const isActive = nowMinutes >= prepStart && nowMinutes < peakStart;
+  const stateClass = isActive ? 'staff-state-active-departure' : 'staff-state-upcoming';
+  const header = isActive
+    ? '<h4><strong>Preparation window is now active — deploy staff immediately.</strong></h4>'
+    : '<h4>🛫 Departure Staffing Advisory</h4>';
+
+  const peakHourLabel = formatClockFromMinutes(peakStart);
+  const prepStartLabel = formatClockFromMinutes(prepStart);
+  const prepEndLabel = formatClockFromMinutes(prepEnd);
+  const deployByLabel = formatClockFromMinutes(deployBy);
+
+  applyInsightState(
+    box,
+    stateClass,
+    `
+      ${header}
+      <ul>
+        <li>TSA Security Screening — Allocate additional screening staff from <strong>${prepStartLabel}</strong> to <strong>${prepEndLabel}</strong>. Peak departure expected at <strong>${peakHourLabel}</strong> with <strong>${peakTotal}</strong> flights.</li>
+        <li>Gate Agents and Ground Crew — Deploy staff to assigned gates by <strong>${deployByLabel}</strong>. Coordinate with airlines for <strong>${peakTotal}</strong> departing flights.</li>
+        <li>Check-in Counters — Open additional counters from <strong>${prepStartLabel}</strong> to handle passenger check-in volume before peak departure at <strong>${peakHourLabel}</strong>.</li>
+      </ul>
+    `
+  );
+}
+
+function renderArrivalInsightBox(box, flights) {
+  const { peakHour, peakTotal } = getPeakHourForToday(flights, 'arrivals');
+  if (peakTotal < 5) {
+    applyInsightState(
+      box,
+      'staff-state-low',
+      '<h4>🛬 Arrival Staffing Advisory</h4><div><strong>Arrival demand is low — standard staffing levels are sufficient.</strong></div>'
+    );
+    return;
+  }
+
+  const nowMinutes = torontoMinutesNow();
+  const peakStart = peakHour * 60;
+  const coverageEnd = peakStart + 210;
+  const borderEnd = peakStart + 150;
+  const exitStart = peakStart + 30;
+
+  if (nowMinutes > coverageEnd) {
+    applyInsightState(
+      box,
+      'staff-state-passed',
+      '<h4>🛬 Arrival Staffing Advisory</h4><div><strong>Today\'s peak arrival window has passed — monitor tomorrow\'s schedule.</strong></div>'
+    );
+    return;
+  }
+
+  const isActive = nowMinutes >= peakStart && nowMinutes <= coverageEnd;
+  const stateClass = isActive ? 'staff-state-active-arrival' : 'staff-state-upcoming';
+  const header = isActive
+    ? '<h4><strong>Active arrival peak window — all arrival services must be at full capacity now.</strong></h4>'
+    : '<h4>🛬 Arrival Staffing Advisory</h4>';
+
+  const peakHourLabel = formatClockFromMinutes(peakStart);
+  const coverageEndLabel = formatClockFromMinutes(coverageEnd);
+  const borderEndLabel = formatClockFromMinutes(borderEnd);
+  const exitStartLabel = formatClockFromMinutes(exitStart);
+
+  applyInsightState(
+    box,
+    stateClass,
+    `
+      ${header}
+      <ul>
+        <li>Baggage Claim — Staff all active carousels from <strong>${peakHourLabel}</strong> to <strong>${coverageEndLabel}</strong>. Peak arrival expected at <strong>${peakHourLabel}</strong> with <strong>${peakTotal}</strong> flights.</li>
+        <li>Immigration and Border Services — Increase officer capacity from <strong>${peakHourLabel}</strong> through <strong>${borderEndLabel}</strong> to process incoming international passengers.</li>
+        <li>Customs and Exit Lanes — Maintain full capacity from <strong>${exitStartLabel}</strong> to <strong>${coverageEndLabel}</strong> as passengers clear immigration and collect baggage.</li>
+      </ul>
+    `
+  );
 }
 
 function buildBinsForDate(flights, dateKey) {
@@ -628,11 +858,9 @@ function statusLabel(resolvedStatus, rawStatus, delay) {
 let allFlights = data.flights ?? [];
 let fetchedAt = data.fetchedAt ? new Date(data.fetchedAt) : null;
 let lastFetchedAtIso = data.fetchedAt || null;
-const todayKey = torontoDateKey(new Date());
 let availableDateKeys = [];
 let currentDateKey = null;
 let currentStatusFilter = 'all';
-let peakBinGlobal = null;
 
 let metaRow = null;
 let metaBaseSpan = null;
@@ -643,6 +871,7 @@ let nextRefreshAt = Date.now() + REFRESH_MS;
 let isPageActive = typeof document === 'undefined' ? true : document.visibilityState === 'visible';
 
 function recomputeDateOptions() {
+  const todayDateKey = torontoDateKey(new Date());
   const keysSet = new Set();
   allFlights.forEach(f => {
     const d = toLocalDate(f.scheduledTime);
@@ -651,9 +880,9 @@ function recomputeDateOptions() {
   });
   availableDateKeys = Array.from(keysSet).sort();
   if (!currentDateKey) {
-    currentDateKey = availableDateKeys.includes(todayKey)
-      ? todayKey
-      : availableDateKeys[0] || todayKey;
+    currentDateKey = availableDateKeys.includes(todayDateKey)
+      ? todayDateKey
+      : availableDateKeys[0] || todayDateKey;
   } else if (!availableDateKeys.includes(currentDateKey) && availableDateKeys.length) {
     currentDateKey = availableDateKeys[0];
   }
@@ -769,16 +998,6 @@ function renderForSelection() {
   metrics.scheduled.set(totalScheduled);
   metrics.total.set(totalFlights);
 
-  const bins = buildBinsForDate(flightsForDate, currentDateKey);
-
-  // peak bin across total flights
-  peakBinGlobal = null;
-  bins.forEach(b => {
-    if (!peakBinGlobal || b.total > peakBinGlobal.total) {
-      peakBinGlobal = b;
-    }
-  });
-
   const heatmapDateKeys = getHeatmapDateKeys();
   const depHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'departures');
   const arrHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'arrivals');
@@ -804,15 +1023,8 @@ function renderForSelection() {
   });
   dateHeading.textContent = `${dateText} · ${currentTimeEt} ET`;
 
-  // staffing recommendation banner
-  if (peakBinGlobal && peakBinGlobal.total > 0) {
-    const startLabel = hourLabelFromIndex(peakBinGlobal.hour);
-    const endHour = (peakBinGlobal.hour + 1) % 24;
-    const endLabel = hourLabelFromIndex(endHour);
-    staffBanner.textContent = `High demand expected between ${startLabel} – ${endLabel} (≈${peakBinGlobal.total} flights) — consider increasing staffing.`;
-  } else {
-    staffBanner.textContent = 'No significant demand peaks detected for the selected date.';
-  }
+  renderDepartureInsightBox(departureInsightBox, allFlights);
+  renderArrivalInsightBox(arrivalInsightBox, allFlights);
 
   renderTable(flightsForDate);
   updateMeta(flightsForDate.length);

@@ -320,11 +320,11 @@ function buildUI() {
   // Subtitle
   const sub = document.createElement('div');
   sub.className = 'chart-sub';
-  sub.textContent = 'GitHub-style heatmaps for today and tomorrow using recent + upcoming flights. Darker red indicates higher staffing pressure.';
+  sub.textContent = 'Departures heatmap focuses on today (ET); arrivals heatmap covers today and tomorrow. Future flights are best-effort from OpenSky.';
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';
-  depHeatmapTitle.textContent = 'Departures by Hour';
+  depHeatmapTitle.textContent = 'Departures by Hour (Today, ET)';
 
   const depHeatmapContainer = document.createElement('div');
   depHeatmapContainer.className = 'heatmap-container';
@@ -1053,7 +1053,8 @@ function renderForSelection() {
   metrics.total.set(totalFlights);
 
   const heatmapDateKeys = getHeatmapDateKeys();
-  const depHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'departures');
+  const todayHeatmapKey = torontoDateKey(new Date());
+  const depHeatmapData = buildDirectionalHeatmapData(allFlights, [todayHeatmapKey], 'departures');
   const arrHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'arrivals');
   const sharedMax = Math.max(depHeatmapData.maxTotal, arrHeatmapData.maxTotal);
 
@@ -1205,6 +1206,20 @@ if (data.error) {
 ```js
 const flights = data.flights ?? [];
 
+function torontoDateKeyForList(date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Toronto",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  const day = parts.find((p) => p.type === "day")?.value;
+  return `${year}-${month}-${day}`;
+}
+
 function formatTime(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -1237,20 +1252,41 @@ function statusLabel(resolvedStatus, rawStatus, delay) {
   return labels[resolvedStatus] ?? rawStatus ?? "Unknown";
 }
 
-if (flights.length === 0 && !data.error) {
+const now = new Date();
+const todayKeyForList = torontoDateKeyForList(now);
+const departuresUntilEndOfToday = flights
+  .filter((f) => {
+    if (f.type !== "departure") return false;
+    const when = new Date(f.scheduledTime);
+    if (Number.isNaN(when.getTime())) return false;
+    return when >= now && torontoDateKeyForList(when) === todayKeyForList;
+  })
+  .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
+
+if (departuresUntilEndOfToday.length === 0 && !data.error) {
   const box = document.createElement("div");
   box.className = "empty-box";
-  box.textContent = "No flights found in the next 24 hours.";
+  box.textContent = "No departure flights found from now until end of today (ET).";
   display(box);
-} else if (flights.length > 0) {
-  const rows = flights.map((f) => {
+} else if (departuresUntilEndOfToday.length > 0) {
+  const heading = document.createElement("div");
+  heading.className = "heatmap-section-title";
+  heading.textContent = "Departure List (Now → End of Today, ET · Best-effort OpenSky data)";
+  display(heading);
+
+  const hint = document.createElement("div");
+  hint.className = "meta";
+  hint.textContent = "OpenSky does not guarantee a complete future timetable; this list shows all departures currently available in the feed.";
+  display(hint);
+
+  const rows = departuresUntilEndOfToday.map((f) => {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
     const label = statusLabel(f.resolvedStatus, f.status, f.delay);
     return `
       <tr class="${rowClass(f.resolvedStatus)}">
-        <td><span class="badge badge-${f.type === "departure" ? "dep" : "arr"}">${f.type === "departure" ? "DEP" : "ARR"}</span></td>
+        <td><span class="badge badge-dep">DEP</span></td>
         <td><strong>${f.flightNumber}</strong></td>
         <td>${f.airline}</td>
         <td>${airport}</td>
@@ -1267,7 +1303,7 @@ if (flights.length === 0 && !data.error) {
         <th>Type</th>
         <th>Flight</th>
         <th>Airline</th>
-        <th>${"Origin / Destination"}</th>
+        <th>${"Destination"}</th>
         <th>Scheduled (ET)</th>
         <th>Status</th>
       </tr>
@@ -1285,7 +1321,7 @@ if (data.fetchedAt) {
     timeZone: "America/Toronto",
     dateStyle: "medium",
     timeStyle: "short",
-  })} ET  ·  ${flights.length} flight${flights.length !== 1 ? "s" : ""} shown`;
+  })} ET  ·  ${departuresUntilEndOfToday.length} departure flight${departuresUntilEndOfToday.length !== 1 ? "s" : ""} shown`;
   display(meta);
 }
 ```

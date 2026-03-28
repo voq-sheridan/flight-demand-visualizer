@@ -246,7 +246,13 @@ const data = await FileAttachment("data/flights.json").json();
 ```js
 // Render live summary, busyness chart and auto-refresh (10 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
-import * as d3 from "npm:d3@7";
+let d3;
+try {
+  d3 = await import("npm:d3@7");
+} catch (err) {
+  console.warn("Primary D3 bundle failed to load, falling back to CDN:", err);
+  d3 = await import("https://cdn.jsdelivr.net/npm/d3@7/+esm");
+}
 
 // Helper to safely parse times in Toronto timezone context
 function toLocalDate(iso) {

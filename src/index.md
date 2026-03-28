@@ -368,7 +368,6 @@ function buildUI() {
   chartCard.appendChild(heatmapLegend);
   chartCard.appendChild(tooltip);
 
-  wrapper.appendChild(summaryPanel);
   wrapper.appendChild(chartCard);
 
   // Container for the flight table below the top row

@@ -4,6 +4,8 @@ const OPENSKY_CLIENT_ID = process.env.OPENSKY_CLIENT_ID || "";
 const OPENSKY_CLIENT_SECRET = process.env.OPENSKY_CLIENT_SECRET || "";
 
 let cachedAccessToken = null;
+let cachedAccessTokenExpiresAtMs = 0;
+const disabledEndpointFamilies = new Set();
 
 function deriveAirlineName(callsign) {
   const prefix = callsign.replace(/[0-9]/g, '').trim().toUpperCase();
@@ -51,7 +53,8 @@ function sleep(ms) {
 }
 
 async function getAccessToken(forceRefresh = false) {
-  if (!forceRefresh && cachedAccessToken) {
+  const nowMs = Date.now();
+  if (!forceRefresh && cachedAccessToken && cachedAccessTokenExpiresAtMs - nowMs > 60_000) {
     return cachedAccessToken;
   }
 
@@ -86,6 +89,11 @@ async function getAccessToken(forceRefresh = false) {
       return null;
     }
 
+    const expiresInSec = Number(json?.expires_in);
+    cachedAccessTokenExpiresAtMs = Number.isFinite(expiresInSec)
+      ? Date.now() + expiresInSec * 1000
+      : Date.now() + 10 * 60 * 1000;
+
     cachedAccessToken = token;
     return token;
   } catch (err) {
@@ -96,7 +104,19 @@ async function getAccessToken(forceRefresh = false) {
 
 async function getAuthHeaders(forceRefresh = false) {
   const token = await getAccessToken(forceRefresh);
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return token ? { Authorization: `Bearer ${token}`, Accept: 'application/json' } : { Accept: 'application/json' };
+}
+
+function isPermanentEndpointFailureStatus(status) {
+  return status === 404;
+}
+
+function retryDelayFromResponse(res, attempt) {
+  const retryAfterSec = Number(res.headers.get('retry-after'));
+  if (Number.isFinite(retryAfterSec) && retryAfterSec > 0) {
+    return retryAfterSec * 1000;
+  }
+  return (attempt + 1) * 1200;
 }
 
 function toIso(ts) {
@@ -251,15 +271,27 @@ async function fetchStatesFallback(unixNow) {
   }
 }
 
-async function fetchEndpoint(url, label) {
+async function fetchEndpoint(url, label, family) {
+  if (family && disabledEndpointFamilies.has(family)) {
+    return [];
+  }
+
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const headers = await getAuthHeaders(attempt > 0);
+      const shouldForceTokenRefresh = attempt > 0;
+      const headers = await getAuthHeaders(shouldForceTokenRefresh);
       const res = await fetch(url, { headers });
       if (!res.ok) {
         if ((res.status === 429 || res.status === 503 || res.status === 401) && attempt < 2) {
-          await sleep((attempt + 1) * 1200);
+          if (res.status === 401) {
+            cachedAccessToken = null;
+            cachedAccessTokenExpiresAtMs = 0;
+          }
+          await sleep(retryDelayFromResponse(res, attempt));
           continue;
+        }
+        if (family && isPermanentEndpointFailureStatus(res.status)) {
+          disabledEndpointFamilies.add(family);
         }
         process.stderr.write(`OpenSky ${label} request failed with HTTP ${res.status}\n`);
         return [];
@@ -281,35 +313,29 @@ async function fetchEndpoint(url, label) {
 
 async function fetchAirportFlightsWithWindowFallback(endpoint, label, unixNow) {
   const endpointName = endpoint === 'departure' ? 'departures' : 'arrivals';
-  const candidates = [
-    // Additional historical ranges to recover more records when endpoint behavior is inconsistent.
-    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 48 * 3600}&end=${unixNow}`,
-    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 48 * 3600}&end=${unixNow}`,
-    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 24 * 3600}&end=${unixNow}`,
-    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 24 * 3600}&end=${unixNow}`,
-    // Include historical window for heatmap context (past 12h).
-    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow}`,
-    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow}`,
-  // Mixed rolling window: past 12h + next 6h.
-  `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow + 6 * 3600}`,
-  `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow + 6 * 3600}`,
-  // Broader fallback windows in case stricter calls fail.
-    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow + 24 * 3600}`,
-    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow - 12 * 3600}&end=${unixNow + 24 * 3600}`,
-    // Future-heavy windows for volume.
-    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow}&end=${unixNow + 24 * 3600}`,
-    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow}&end=${unixNow + 24 * 3600}`,
-    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow}&end=${unixNow + 48 * 3600}`,
-    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow}&end=${unixNow + 48 * 3600}`,
-    `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${unixNow}&end=${unixNow + 72 * 3600}`,
-    `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${unixNow}&end=${unixNow + 72 * 3600}`
-  ];
+  const windowHours = [24, 12, 6, 48, 72];
+  const candidates = [];
+  for (const hours of windowHours) {
+    const begin = unixNow - hours * 3600;
+    const end = unixNow;
+    candidates.push({
+      url: `${OPEN_SKY_BASE}/${endpointName}/airport?airport=CYYZ&begin=${begin}&end=${end}`,
+      label: `${label} ${endpointName}/airport ${hours}h`,
+      family: `${endpointName}-airport`
+    });
+    candidates.push({
+      url: `${OPEN_SKY_BASE}/flights/${endpoint}?airport=CYYZ&begin=${begin}&end=${end}`,
+      label: `${label} flights/${endpoint} ${hours}h`,
+      family: `flights-${endpoint}`
+    });
+  }
 
   const merged = [];
   const seenRaw = new Set();
 
   for (let i = 0; i < candidates.length; i++) {
-    const rows = await fetchEndpoint(candidates[i], `${label} (candidate ${i + 1})`);
+    const candidate = candidates[i];
+    const rows = await fetchEndpoint(candidate.url, `${candidate.label} (candidate ${i + 1})`, candidate.family);
     for (const row of rows) {
       const rawKey = `${row?.icao24 || 'unknown'}|${row?.firstSeen || 'na'}|${row?.lastSeen || 'na'}|${(row?.callsign || '').trim()}`;
       if (seenRaw.has(rawKey)) continue;

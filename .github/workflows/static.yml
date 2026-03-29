@@ -199,6 +199,7 @@ jobs:
           echo "Retry #1 summary: ${{ steps.quality_gate_retry_1.outputs.summary }}"
           echo "Retry #2 summary: ${{ steps.quality_gate_retry_2.outputs.summary }}"
       - run: cp src/favicon.svg dist/favicon.svg
+      - run: cp src/favicon.svg dist/favicon.ico
       - run: cp dist/index.html dist/404.html
       - run: touch dist/.nojekyll
       - uses: peaceiris/actions-gh-pages@v3

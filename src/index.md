@@ -786,8 +786,8 @@ function shiftDateKey(dateKey, offsetDays) {
 function getHeatmapDateKeys() {
   const todayKey = torontoDateKey(new Date());
   return [
-    todayKey,
-    shiftDateKey(todayKey, 1)
+    shiftDateKey(todayKey, -1),
+    todayKey
   ];
 }
 
@@ -1139,9 +1139,7 @@ function renderForSelection() {
   metrics.scheduled.set(totalScheduled);
   metrics.total.set(totalFlights);
 
-  const heatmapDateKeys = availableDateKeys.length
-    ? availableDateKeys
-    : [torontoDateKey(new Date())];
+  const heatmapDateKeys = getHeatmapDateKeys();
   const depHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'departures');
   const arrHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'arrivals');
   const sharedMax = Math.max(depHeatmapData.maxTotal, arrHeatmapData.maxTotal);

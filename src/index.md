@@ -1036,7 +1036,7 @@ function updateMeta(selectedDateCount, totalLoadedCount) {
     timeZone: 'America/Toronto',
     dateStyle: 'medium',
     timeStyle: 'short',
-  })} ET  ·  ${selectedDateCount} flight${selectedDateCount !== 1 ? 's' : ''} on selected date · ${totalLoadedCount} total loaded`;
+  })} ET  ·  ${selectedDateCount} flight${selectedDateCount !== 1 ? 's' : ''} on selected date · ${totalLoadedCount} total loaded · Auto-refresh every 1 hour`;
   metaBaseSpan.textContent = baseText;
 }
 

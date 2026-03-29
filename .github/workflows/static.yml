@@ -8,17 +8,27 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
-      - run: npm run clean
+          cache: 'npm'
+      - run: npm install --no-audit --no-fund
+      - run: npm run clean || true
       - run: npm run build
         env:
           OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
           OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
-      - run: mkdir -p dist/data && cp dist/_file/data/flights.*.json dist/data/flights.json
+      - name: Prepare stable data path
+        run: |
+          mkdir -p dist/data
+          latest="$(ls -t dist/_file/data/flights*.json 2>/dev/null | head -n1 || true)"
+          if [ -n "$latest" ] && [ -f "$latest" ]; then
+            cp "$latest" dist/data/flights.json
+          else
+            echo '::warning::No generated flights*.json found; writing empty fallback data file.'
+            printf '{"flights":[],"fetchedAt":"%s","totalDepartures":0,"totalArrivals":0}' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/data/flights.json
+          fi
       - run: cp src/favicon.svg dist/favicon.svg
       - run: cp src/favicon.svg dist/favicon.ico
       - run: cp dist/index.html dist/404.html

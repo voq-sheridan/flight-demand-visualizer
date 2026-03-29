@@ -29,7 +29,8 @@ jobs:
           OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
           OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
       - run: mkdir -p dist/data && cp dist/_file/data/flights.*.json dist/data/flights.json
-      - name: Validate generated flight snapshot quality (warning only)
+      - name: Evaluate generated flight snapshot quality
+        id: quality_gate
         run: |
           node -e '
             const fs = require("fs");
@@ -37,8 +38,11 @@ jobs:
             const json = JSON.parse(fs.readFileSync(path, "utf8"));
             const flights = Array.isArray(json.flights) ? json.flights : [];
             const total = flights.length;
+            let deployOk = true;
+            const reasons = [];
             if (total < 100) {
-              console.log(`::warning::Snapshot is small (${total} flights) and may reflect fallback-only data.`);
+              deployOk = false;
+              reasons.push(`small snapshot (${total} flights)`);
             }
             const tz = "America/Toronto";
             const key = (d) => {
@@ -61,14 +65,30 @@ jobs:
               return Number.isFinite(d.getTime()) && key(d) === yesterdayKey;
             }).length;
             if (yesterdayCount === 0) {
-              console.log(`::warning::No flights found for previous Toronto date (${yesterdayKey}).`);
+              deployOk = false;
+              reasons.push(`no flights for previous Toronto date (${yesterdayKey})`);
             }
-            console.log(`Snapshot validation passed: total=${total}, previousDate(${yesterdayKey})=${yesterdayCount}`);
+            const summary = `total=${total}, previousDate(${yesterdayKey})=${yesterdayCount}`;
+            console.log(`Snapshot quality summary: ${summary}`);
+
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `deploy_ok=${deployOk}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `summary=${summary}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `reasons=${reasons.join("; ")}\n`);
+
+            if (!deployOk) {
+              console.log(`::warning::Skipping deployment due to degraded snapshot: ${reasons.join("; ")}`);
+            }
           '
+      - name: Skip deploy notice
+        if: steps.quality_gate.outputs.deploy_ok != 'true'
+        run: |
+          echo "::warning::Deployment skipped. Keeping previous published site."
+          echo "Snapshot summary: ${{ steps.quality_gate.outputs.summary }}"
       - run: cp src/favicon.svg dist/favicon.svg
       - run: cp dist/index.html dist/404.html
       - run: touch dist/.nojekyll
       - uses: peaceiris/actions-gh-pages@v3
+        if: steps.quality_gate.outputs.deploy_ok == 'true'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist

@@ -17,6 +17,7 @@ jobs:
         env:
           OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
           OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
+      - run: cp dist/index.html dist/404.html
       - run: touch dist/.nojekyll
       - uses: peaceiris/actions-gh-pages@v3
         with:

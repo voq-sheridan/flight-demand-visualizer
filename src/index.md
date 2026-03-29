@@ -4,7 +4,7 @@ title: Toronto Pearson Airport — Flight Activity
 
 # ✈ Toronto Pearson International Airport (YYZ)— Flights Monitor
 
-Recent and near-term flights (past 12 hours + next 6 hours) for departures and arrivals.  
+All available flights currently returned by the API feed for departures and arrivals.  
 Data sourced from [OpenSky Network](https://opensky-network.org/).
 
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
@@ -379,7 +379,7 @@ function buildUI() {
   // Chart title
   const title = document.createElement('div');
   title.className = 'chart-title';
-  title.textContent = 'Flight volume by hour — past 12h + next 6h';
+  title.textContent = 'Flight volume by hour — all available flights';
 
   // Selected date heading
   const dateHeading = document.createElement('div');
@@ -388,7 +388,7 @@ function buildUI() {
   // Subtitle
   const sub = document.createElement('div');
   sub.className = 'chart-sub';
-  sub.textContent = 'Departures heatmap focuses on today (ET); arrivals heatmap covers today and tomorrow. Future flights are best-effort from OpenSky.';
+  sub.textContent = 'Departures and arrivals heatmaps include all available YYZ flights currently returned by OpenSky.';
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';
@@ -1139,9 +1139,11 @@ function renderForSelection() {
   metrics.scheduled.set(totalScheduled);
   metrics.total.set(totalFlights);
 
-  const todayHeatmapKey = torontoDateKey(new Date());
-  const depHeatmapData = buildDirectionalHeatmapData(allFlights, [todayHeatmapKey], 'departures');
-  const arrHeatmapData = buildDirectionalHeatmapData(allFlights, [todayHeatmapKey], 'arrivals');
+  const heatmapDateKeys = availableDateKeys.length
+    ? availableDateKeys
+    : [torontoDateKey(new Date())];
+  const depHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'departures');
+  const arrHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'arrivals');
   const sharedMax = Math.max(depHeatmapData.maxTotal, arrHeatmapData.maxTotal);
 
   drawDirectionalHeatmap(depHeatmapSvg, depHeatmapContainer, depHeatmapData, sharedMax);
@@ -1338,28 +1340,21 @@ function statusLabel(resolvedStatus, rawStatus, delay) {
   return labels[resolvedStatus] ?? rawStatus ?? "Unknown";
 }
 
-const now = new Date();
-const past12Hours = new Date(now.getTime() - 12 * 60 * 60 * 1000);
-const next6Hours = new Date(now.getTime() + 6 * 60 * 60 * 1000);
-const departuresPast12hAndNext6h = flights
+const departuresAll = flights
   .filter((f) => {
     if (f.type !== "departure") return false;
     const when = new Date(f.scheduledTime);
     if (Number.isNaN(when.getTime())) return false;
-    const isPast12h = when >= past12Hours && when <= now;
-    const isUpcoming6h = when >= now && when <= next6Hours;
-    return isPast12h || isUpcoming6h;
+    return true;
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
-const arrivalsPast12hAndNext6h = flights
+const arrivalsAll = flights
   .filter((f) => {
     if (f.type !== "arrival") return false;
     const when = new Date(f.scheduledTime);
     if (Number.isNaN(when.getTime())) return false;
-    const isPast12h = when >= past12Hours && when <= now;
-    const isUpcoming6h = when >= now && when <= next6Hours;
-    return isPast12h || isUpcoming6h;
+    return true;
   })
   .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
 
@@ -1465,24 +1460,24 @@ function createFlightListPanel({
 
 listsWrap.appendChild(
   createFlightListPanel({
-    title: "Departure List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET)",
-    flights: departuresPast12hAndNext6h,
+    title: "Departure List (All Available Flights, ET)",
+    flights: departuresAll,
     flightLabel: "departure",
     typeBadge: "dep",
     locationHeader: "Destination",
-    emptyText: "No departure flights found in the past 12 hours or in the next 6 hours (ET).",
+    emptyText: "No departure flights currently available in the API feed.",
     includeHint: true,
   })
 );
 
 listsWrap.appendChild(
   createFlightListPanel({
-    title: "Arrival List (Past 12 Hours + Live (Current time) → Next 6 Hours, ET)",
-    flights: arrivalsPast12hAndNext6h,
+    title: "Arrival List (All Available Flights, ET)",
+    flights: arrivalsAll,
     flightLabel: "arrival",
     typeBadge: "arr",
     locationHeader: "Origin",
-    emptyText: "No arrival flights found in the past 12 hours or in the next 6 hours (ET).",
+    emptyText: "No arrival flights currently available in the API feed.",
     includeHint: true,
   })
 );

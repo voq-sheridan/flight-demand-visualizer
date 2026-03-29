@@ -322,11 +322,9 @@ async function fetchAirportFlightsWithWindowFallback(endpoint, label, unixNow) {
 }
 
 function keepRollingWindowFlights(flights, unixNow) {
-  const startMs = (unixNow - 12 * 3600) * 1000;
-  const endMs = (unixNow + 6 * 3600) * 1000;
   return flights.filter((f) => {
     const ts = Date.parse(f.scheduledTime);
-    return Number.isFinite(ts) && ts >= startMs && ts <= endMs;
+    return Number.isFinite(ts);
   });
 }
 

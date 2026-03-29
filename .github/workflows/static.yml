@@ -13,12 +13,59 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+      - name: Verify OpenSky secrets are present
+        run: |
+          if [ -z "${OPENSKY_CLIENT_ID}" ] || [ -z "${OPENSKY_CLIENT_SECRET}" ]; then
+            echo "Missing OPENSKY_CLIENT_ID/OPENSKY_CLIENT_SECRET secrets; refusing deploy." >&2
+            exit 1
+          fi
+        env:
+          OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
+          OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
       - run: npm run clean
       - run: npm run build
         env:
           OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
           OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
       - run: mkdir -p dist/data && cp dist/_file/data/flights.*.json dist/data/flights.json
+      - name: Validate generated flight snapshot quality
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "dist/data/flights.json";
+            const json = JSON.parse(fs.readFileSync(path, "utf8"));
+            const flights = Array.isArray(json.flights) ? json.flights : [];
+            const total = flights.length;
+            if (total < 100) {
+              console.error(`Snapshot too small (${total} flights). Aborting deploy to avoid fallback-only data.`);
+              process.exit(1);
+            }
+            const tz = "America/Toronto";
+            const key = (d) => {
+              const p = new Intl.DateTimeFormat("en-CA", {
+                timeZone: tz,
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit"
+              }).formatToParts(d);
+              const y = p.find((x) => x.type === "year")?.value;
+              const m = p.find((x) => x.type === "month")?.value;
+              const day = p.find((x) => x.type === "day")?.value;
+              return `${y}-${m}-${day}`;
+            };
+            const today = new Date();
+            const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+            const yesterdayKey = key(yesterday);
+            const yesterdayCount = flights.filter((f) => {
+              const d = new Date(f?.scheduledTime);
+              return Number.isFinite(d.getTime()) && key(d) === yesterdayKey;
+            }).length;
+            if (yesterdayCount === 0) {
+              console.error(`No flights found for previous Toronto date (${yesterdayKey}). Aborting deploy.`);
+              process.exit(1);
+            }
+            console.log(`Snapshot validation passed: total=${total}, previousDate(${yesterdayKey})=${yesterdayCount}`);
+          '
       - run: cp src/favicon.svg dist/favicon.svg
       - run: cp dist/index.html dist/404.html
       - run: touch dist/.nojekyll

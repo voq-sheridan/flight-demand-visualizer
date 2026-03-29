@@ -76,19 +76,133 @@ jobs:
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `reasons=${reasons.join("; ")}\n`);
 
             if (!deployOk) {
-              console.log(`::warning::Skipping deployment due to degraded snapshot: ${reasons.join("; ")}`);
+              console.log(`::warning::Initial snapshot degraded: ${reasons.join("; ")}`);
             }
           '
-      - name: Skip deploy notice
+      - name: Retry snapshot build (attempt 2)
         if: steps.quality_gate.outputs.deploy_ok != 'true'
         run: |
+          echo "Retrying snapshot build after degraded initial result..."
+          npm run clean
+          npm run build
+          mkdir -p dist/data && cp dist/_file/data/flights.*.json dist/data/flights.json
+        env:
+          OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
+          OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
+      - name: Evaluate retry snapshot quality (attempt 2)
+        id: quality_gate_retry_1
+        if: steps.quality_gate.outputs.deploy_ok != 'true'
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "dist/data/flights.json";
+            const json = JSON.parse(fs.readFileSync(path, "utf8"));
+            const flights = Array.isArray(json.flights) ? json.flights : [];
+            const total = flights.length;
+            let deployOk = true;
+            const reasons = [];
+            if (total < 100) {
+              deployOk = false;
+              reasons.push(`small snapshot (${total} flights)`);
+            }
+            const tz = "America/Toronto";
+            const key = (d) => {
+              const p = new Intl.DateTimeFormat("en-CA", {
+                timeZone: tz,
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit"
+              }).formatToParts(d);
+              const y = p.find((x) => x.type === "year")?.value;
+              const m = p.find((x) => x.type === "month")?.value;
+              const day = p.find((x) => x.type === "day")?.value;
+              return `${y}-${m}-${day}`;
+            };
+            const today = new Date();
+            const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+            const yesterdayKey = key(yesterday);
+            const yesterdayCount = flights.filter((f) => {
+              const d = new Date(f?.scheduledTime);
+              return Number.isFinite(d.getTime()) && key(d) === yesterdayKey;
+            }).length;
+            if (yesterdayCount === 0) {
+              deployOk = false;
+              reasons.push(`no flights for previous Toronto date (${yesterdayKey})`);
+            }
+            const summary = `total=${total}, previousDate(${yesterdayKey})=${yesterdayCount}`;
+            console.log(`Retry (attempt 2) summary: ${summary}`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `deploy_ok=${deployOk}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `summary=${summary}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `reasons=${reasons.join("; ")}\n`);
+          '
+      - name: Retry snapshot build (attempt 3)
+        if: steps.quality_gate.outputs.deploy_ok != 'true' && steps.quality_gate_retry_1.outputs.deploy_ok != 'true'
+        run: |
+          echo "Retrying snapshot build (final attempt)..."
+          npm run clean
+          npm run build
+          mkdir -p dist/data && cp dist/_file/data/flights.*.json dist/data/flights.json
+        env:
+          OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
+          OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
+      - name: Evaluate retry snapshot quality (attempt 3)
+        id: quality_gate_retry_2
+        if: steps.quality_gate.outputs.deploy_ok != 'true' && steps.quality_gate_retry_1.outputs.deploy_ok != 'true'
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "dist/data/flights.json";
+            const json = JSON.parse(fs.readFileSync(path, "utf8"));
+            const flights = Array.isArray(json.flights) ? json.flights : [];
+            const total = flights.length;
+            let deployOk = true;
+            const reasons = [];
+            if (total < 100) {
+              deployOk = false;
+              reasons.push(`small snapshot (${total} flights)`);
+            }
+            const tz = "America/Toronto";
+            const key = (d) => {
+              const p = new Intl.DateTimeFormat("en-CA", {
+                timeZone: tz,
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit"
+              }).formatToParts(d);
+              const y = p.find((x) => x.type === "year")?.value;
+              const m = p.find((x) => x.type === "month")?.value;
+              const day = p.find((x) => x.type === "day")?.value;
+              return `${y}-${m}-${day}`;
+            };
+            const today = new Date();
+            const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+            const yesterdayKey = key(yesterday);
+            const yesterdayCount = flights.filter((f) => {
+              const d = new Date(f?.scheduledTime);
+              return Number.isFinite(d.getTime()) && key(d) === yesterdayKey;
+            }).length;
+            if (yesterdayCount === 0) {
+              deployOk = false;
+              reasons.push(`no flights for previous Toronto date (${yesterdayKey})`);
+            }
+            const summary = `total=${total}, previousDate(${yesterdayKey})=${yesterdayCount}`;
+            console.log(`Retry (attempt 3) summary: ${summary}`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `deploy_ok=${deployOk}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `summary=${summary}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `reasons=${reasons.join("; ")}\n`);
+          '
+      - name: Skip deploy notice
+        if: steps.quality_gate.outputs.deploy_ok != 'true' && steps.quality_gate_retry_1.outputs.deploy_ok != 'true' && steps.quality_gate_retry_2.outputs.deploy_ok != 'true'
+        run: |
           echo "::warning::Deployment skipped. Keeping previous published site."
-          echo "Snapshot summary: ${{ steps.quality_gate.outputs.summary }}"
+          echo "Initial summary: ${{ steps.quality_gate.outputs.summary }}"
+          echo "Retry #1 summary: ${{ steps.quality_gate_retry_1.outputs.summary }}"
+          echo "Retry #2 summary: ${{ steps.quality_gate_retry_2.outputs.summary }}"
       - run: cp src/favicon.svg dist/favicon.svg
       - run: cp dist/index.html dist/404.html
       - run: touch dist/.nojekyll
       - uses: peaceiris/actions-gh-pages@v3
-        if: steps.quality_gate.outputs.deploy_ok == 'true'
+        if: steps.quality_gate.outputs.deploy_ok == 'true' || steps.quality_gate_retry_1.outputs.deploy_ok == 'true' || steps.quality_gate_retry_2.outputs.deploy_ok == 'true'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist

@@ -1051,9 +1051,10 @@ function updateCountdown() {
   const now = Date.now();
   const remainingMs = Math.max(0, nextRefreshAt - now);
   const totalSec = Math.floor(remainingMs / 1000);
-  const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+  const hh = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+  const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
   const ss = String(totalSec % 60).padStart(2, '0');
-  countdownSpan.textContent = ` · Refresh in ${mm}:${ss}`;
+  countdownSpan.textContent = ` · Refresh in ${hh}:${mm}:${ss}`;
 }
 
 const countdownTimer = setInterval(updateCountdown, 1000);

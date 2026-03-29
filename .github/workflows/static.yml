@@ -2,6 +2,12 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      allow_empty_snapshot:
+        description: 'Allow deploy even if generated flight snapshot is empty'
+        required: false
+        default: 'false'
 permissions:
   contents: write
 jobs:
@@ -32,12 +38,25 @@ jobs:
             const data = JSON.parse(fs.readFileSync(p, "utf8"));
             const flights = Array.isArray(data.flights) ? data.flights : [];
             const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+            const error = typeof data.error === "string" ? data.error : "";
             console.log(`Snapshot flights=${flights.length} warnings=${warnings.length}`);
+            if (error) console.log(`Snapshot error=${error}`);
+            if (warnings.length) console.log(`Snapshot warnings=${warnings.join(" | ")}`);
             if (flights.length === 0) {
-              console.error("::error::Generated flight snapshot is empty. Failing deploy to avoid publishing degraded data.");
-              process.exit(1);
+              const allowEmpty = String(process.env.ALLOW_EMPTY_SNAPSHOT || "false").toLowerCase() === "true";
+              if (allowEmpty) {
+                console.warn("::warning::Generated flight snapshot is empty, but ALLOW_EMPTY_SNAPSHOT=true so deploy will continue.");
+              } else {
+                const extra = error
+                  ? ` Root cause from loader: ${error}`
+                  : (warnings.length ? ` Warnings: ${warnings.join(" | ")}` : "");
+                console.error(`::error::Generated flight snapshot is empty.${extra} Failing deploy to avoid publishing degraded data.`);
+                process.exit(1);
+              }
             }
           ' "$latest"
+        env:
+          ALLOW_EMPTY_SNAPSHOT: ${{ github.event.inputs.allow_empty_snapshot || 'false' }}
       - name: Prepare stable data path
         run: |
           mkdir -p dist/data

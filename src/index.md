@@ -5,7 +5,7 @@ title: Toronto Pearson Airport — Flight Activity
 # ✈ Toronto Pearson International Airport (YYZ)— Flights Monitor
 
 All available flights currently returned by the API feed for departures and arrivals.  
-Data sourced from [OpenSky Network](https://opensky-network.org/).
+Data sourced from AeroDataBox via RapidAPI.
 
 <style>
   /* Layout */
@@ -386,7 +386,7 @@ function buildUI() {
   // Subtitle
   const sub = document.createElement('div');
   sub.className = 'chart-sub';
-  sub.textContent = 'Departures and arrivals heatmaps include all available YYZ flights currently returned by OpenSky.';
+  sub.textContent = 'Departures and arrivals heatmaps include available YYZ flights for yesterday, today, and tomorrow.';
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';
@@ -782,10 +782,16 @@ function shiftDateKey(dateKey, offsetDays) {
 }
 
 function getHeatmapDateKeys() {
+  const loaderDates = loadedDates || {};
+  const loaded = [loaderDates.yesterday, loaderDates.today, loaderDates.tomorrow]
+    .filter((d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d));
+  if (loaded.length === 3) return loaded;
+
   const todayKey = torontoDateKey(new Date());
   return [
     shiftDateKey(todayKey, -1),
-    todayKey
+    todayKey,
+    shiftDateKey(todayKey, 1)
   ];
 }
 
@@ -984,6 +990,8 @@ function statusLabel(resolvedStatus, rawStatus, delay) {
 let allFlights = data.flights ?? [];
 let fetchedAt = data.fetchedAt ? new Date(data.fetchedAt) : null;
 let lastFetchedAtIso = data.fetchedAt || null;
+let loadedDates = data?.dates || {};
+let dataWarnings = Array.isArray(data?.warnings) ? data.warnings : [];
 let availableDateKeys = [];
 let currentDateKey = null;
 let currentStatusFilter = 'all';
@@ -1068,8 +1076,13 @@ function updateSnapshotTotals(srcData) {
   const arrivals = Number.isFinite(srcData?.totalArrivals)
     ? srcData.totalArrivals
     : flights.filter((f) => f.type === 'arrival').length;
+  const warnings = Array.isArray(srcData?.warnings) ? srcData.warnings : [];
+  dataWarnings = warnings;
 
-  snapshotTotals.textContent = `Snapshot totals (all loaded dates) — Total: ${total} · Departures: ${departures} · Arrivals: ${arrivals}`;
+  const warningSuffix = warnings.length
+    ? ` · ⚠ Partial API data (${warnings.length} day${warnings.length > 1 ? 's' : ''} degraded)`
+    : '';
+  snapshotTotals.textContent = `Snapshot totals (all loaded dates) — Total: ${total} · Departures: ${departures} · Arrivals: ${arrivals}${warningSuffix}`;
 }
 
 function renderTable(flightsForDate) {
@@ -1174,6 +1187,8 @@ function applyNewData(srcData) {
   allFlights = srcData.flights ?? [];
   fetchedAt = srcData.fetchedAt ? new Date(srcData.fetchedAt) : null;
   lastFetchedAtIso = srcData.fetchedAt || lastFetchedAtIso;
+  loadedDates = srcData?.dates || loadedDates;
+  dataWarnings = Array.isArray(srcData?.warnings) ? srcData.warnings : dataWarnings;
   updateSnapshotTotals(srcData);
   recomputeDateOptions();
   renderForSelection();

@@ -17,8 +17,7 @@ jobs:
       - run: npm run clean || true
       - run: npm run build
         env:
-          OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
-          OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
+          AERODATABOX_API_KEY: ${{ secrets.AERODATABOX_API_KEY }}
       - name: Prepare stable data path
         run: |
           mkdir -p dist/data

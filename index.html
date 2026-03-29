@@ -19,14 +19,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.c0982ab1.json","lastModified":1774759983233,"size":5764});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.57c9c096.json","lastModified":1774760183814,"size":6020});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "531880fe", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","availableDateKeys","currentDateKey","currentStatusFilter","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
+define({id: "eddb2766", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","availableDateKeys","currentDateKey","currentStatusFilter","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
 // Render live summary, busyness chart and auto-refresh (2 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 let d3;
@@ -881,27 +881,27 @@ function applyNewData(srcData) {
 }
 
 async function fetchLatestFlightsData() {
-  // Prefer a stable path to avoid hashed-file 404s in long-lived tabs after redeploy.
-  const stableUrl = `./data/flights.json?_=${Date.now()}`;
-  const stableResp = await fetch(stableUrl, { cache: 'no-store' });
-  if (stableResp.ok) {
-    return await stableResp.json();
-  }
-
-  // Fallback to framework-resolved attachment URL for compatibility.
+  // Prefer framework-resolved attachment URL (normally present in both preview and static builds).
   const attachmentUrl = await FileAttachment("./data/flights.json").url();
-  const fallbackUrl = attachmentUrl.includes('?')
+  const primaryUrl = attachmentUrl.includes('?')
     ? `${attachmentUrl}&_=${Date.now()}`
     : `${attachmentUrl}?_=${Date.now()}`;
 
-  const fallbackResp = await fetch(fallbackUrl, { cache: 'no-store' });
-  if (fallbackResp.status === 404) {
+  const primaryResp = await fetch(primaryUrl, { cache: 'no-store' });
+  if (primaryResp.ok) {
+    return await primaryResp.json();
+  }
+
+  // Secondary fallback: stable path copied by CI deploy hardening.
+  const stableUrl = `./data/flights.json?_=${Date.now()}`;
+  const stableResp = await fetch(stableUrl, { cache: 'no-store' });
+  if (stableResp.status === 404) {
     return null;
   }
-  if (!fallbackResp.ok) {
-    throw new Error(`Refresh request failed with HTTP ${fallbackResp.status}`);
+  if (!stableResp.ok) {
+    throw new Error(`Refresh request failed with HTTP ${stableResp.status}`);
   }
-  return await fallbackResp.json();
+  return await stableResp.json();
 }
 
 // initial render
@@ -1204,7 +1204,6 @@ return {flights,torontoDateKeyForList,formatTime,pillClass,rowClass,statusLabel,
 <h1 id="toronto-pearson-international-airport-yyz-flights-monitor" tabindex="-1"><a class="observablehq-header-anchor" href="#toronto-pearson-international-airport-yyz-flights-monitor">✈ Toronto Pearson International Airport (YYZ)— Flights Monitor</a></h1>
 <p>All available flights currently returned by the API feed for departures and arrivals.<br>
 Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="noopener noreferrer">OpenSky Network</a>.</p>
-<link rel="icon" href="./_file/favicon.e761dfd5.svg" type="image/svg+xml">
 <style>
   /* Layout */
   .top-row {
@@ -1518,12 +1517,12 @@ Data sourced from <a href="https://opensky-network.org/" target="_blank" rel="no
   }
 </style>
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
-<div class="observablehq observablehq--block"><!--:531880fe:--></div>
+<div class="observablehq observablehq--block"><!--:eddb2766:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
 <div class="observablehq observablehq--block"><!--:007afbce:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-29T04:52:56">Mar 29, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-29T04:56:17">Mar 29, 2026</a>.</div>
 </footer>
 </div>
 </body>

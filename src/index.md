@@ -7,8 +7,6 @@ title: Toronto Pearson Airport — Flight Activity
 All available flights currently returned by the API feed for departures and arrivals.  
 Data sourced from [OpenSky Network](https://opensky-network.org/).
 
-<link rel="icon" href="./favicon.svg" type="image/svg+xml">
-
 <style>
   /* Layout */
   .top-row {
@@ -1181,27 +1179,27 @@ function applyNewData(srcData) {
 }
 
 async function fetchLatestFlightsData() {
-  // Prefer a stable path to avoid hashed-file 404s in long-lived tabs after redeploy.
-  const stableUrl = `./data/flights.json?_=${Date.now()}`;
-  const stableResp = await fetch(stableUrl, { cache: 'no-store' });
-  if (stableResp.ok) {
-    return await stableResp.json();
-  }
-
-  // Fallback to framework-resolved attachment URL for compatibility.
+  // Prefer framework-resolved attachment URL (normally present in both preview and static builds).
   const attachmentUrl = await FileAttachment("./data/flights.json").url();
-  const fallbackUrl = attachmentUrl.includes('?')
+  const primaryUrl = attachmentUrl.includes('?')
     ? `${attachmentUrl}&_=${Date.now()}`
     : `${attachmentUrl}?_=${Date.now()}`;
 
-  const fallbackResp = await fetch(fallbackUrl, { cache: 'no-store' });
-  if (fallbackResp.status === 404) {
+  const primaryResp = await fetch(primaryUrl, { cache: 'no-store' });
+  if (primaryResp.ok) {
+    return await primaryResp.json();
+  }
+
+  // Secondary fallback: stable path copied by CI deploy hardening.
+  const stableUrl = `./data/flights.json?_=${Date.now()}`;
+  const stableResp = await fetch(stableUrl, { cache: 'no-store' });
+  if (stableResp.status === 404) {
     return null;
   }
-  if (!fallbackResp.ok) {
-    throw new Error(`Refresh request failed with HTTP ${fallbackResp.status}`);
+  if (!stableResp.ok) {
+    throw new Error(`Refresh request failed with HTTP ${stableResp.status}`);
   }
-  return await fallbackResp.json();
+  return await stableResp.json();
 }
 
 // initial render

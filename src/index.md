@@ -98,11 +98,34 @@ Data sourced from [OpenSky Network](https://opensky-network.org/).
 
   .heatmap-legend {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.45rem;
     margin-top: 0.6rem;
     font-size: 0.8rem;
     color: #4b5563;
+  }
+
+  .heatmap-legend-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.18rem;
+    min-width: 72px;
+  }
+
+  .heatmap-legend-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1.1;
+    text-align: center;
+  }
+
+  .heatmap-legend-range {
+    font-size: 0.68rem;
+    color: #6b7280;
+    line-height: 1.1;
+    text-align: center;
   }
 
   .heatmap-swatch {
@@ -397,12 +420,31 @@ function buildUI() {
   const heatmapLegend = document.createElement('div');
   heatmapLegend.className = 'heatmap-legend';
   heatmapLegend.innerHTML = `
-    <span>Less</span>
-    <span class="heatmap-swatch" style="background:#f5f5f5" title="0 flights"></span>
-    <span class="heatmap-swatch" style="background:#fee0d2" title="1-10 flights"></span>
-    <span class="heatmap-swatch" style="background:#fc9272" title="11-20 flights"></span>
-    <span class="heatmap-swatch" style="background:#de2d26" title="21+ flights"></span>
-    <span>More</span>`;
+    <span class="heatmap-legend-item">
+      <span class="heatmap-swatch" style="background:#f5f5f5" title="Quiet / 0 flights"></span>
+      <span class="heatmap-legend-name">Quiet</span>
+      <span class="heatmap-legend-range">0 flights</span>
+    </span>
+    <span class="heatmap-legend-item">
+      <span class="heatmap-swatch" style="background:#fee5d9" title="Low / 1–5 flights"></span>
+      <span class="heatmap-legend-name">Low</span>
+      <span class="heatmap-legend-range">1–5 flights</span>
+    </span>
+    <span class="heatmap-legend-item">
+      <span class="heatmap-swatch" style="background:#fcae91" title="Moderate / 6–12 flights"></span>
+      <span class="heatmap-legend-name">Moderate</span>
+      <span class="heatmap-legend-range">6–12 flights</span>
+    </span>
+    <span class="heatmap-legend-item">
+      <span class="heatmap-swatch" style="background:#fb6a4a" title="Busy / 13–20 flights"></span>
+      <span class="heatmap-legend-name">Busy</span>
+      <span class="heatmap-legend-range">13–20 flights</span>
+    </span>
+    <span class="heatmap-legend-item">
+      <span class="heatmap-swatch" style="background:#cb181d" title="Peak / 21+ flights"></span>
+      <span class="heatmap-legend-name">Peak</span>
+      <span class="heatmap-legend-range">21+ flights</span>
+    </span>`;
 
   // Tooltip for bars
   const tooltip = document.createElement('div');
@@ -720,10 +762,11 @@ function buildBinsForDate(flights, dateKey) {
 }
 
 function heatmapColor(total) {
-  if (total === 0) return '#f5f5f5';
-  if (total <= 10) return '#fee0d2';
-  if (total <= 20) return '#fc9272';
-  return '#de2d26';
+  const heatmapColorScale = d3
+    .scaleThreshold()
+    .domain([1, 6, 13, 21])
+    .range(['#f5f5f5', '#fee5d9', '#fcae91', '#fb6a4a', '#cb181d']);
+  return heatmapColorScale(total);
 }
 
 function parseDateKey(dateKey) {

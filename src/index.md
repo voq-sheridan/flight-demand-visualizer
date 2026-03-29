@@ -1183,21 +1183,27 @@ function applyNewData(srcData) {
 }
 
 async function fetchLatestFlightsData() {
-  // Use only the framework-resolved file URL to avoid any speculative 404 requests.
+  // Prefer a stable path to avoid hashed-file 404s in long-lived tabs after redeploy.
+  const stableUrl = `./data/flights.json?_=${Date.now()}`;
+  const stableResp = await fetch(stableUrl, { cache: 'no-store' });
+  if (stableResp.ok) {
+    return await stableResp.json();
+  }
+
+  // Fallback to framework-resolved attachment URL for compatibility.
   const attachmentUrl = await FileAttachment("./data/flights.json").url();
-  const url = attachmentUrl.includes('?')
+  const fallbackUrl = attachmentUrl.includes('?')
     ? `${attachmentUrl}&_=${Date.now()}`
     : `${attachmentUrl}?_=${Date.now()}`;
 
-  const resp = await fetch(url, { cache: 'no-store' });
-  if (resp.status === 404) {
-    // Transient in-flight deploy mismatch; skip this cycle and retry next interval.
+  const fallbackResp = await fetch(fallbackUrl, { cache: 'no-store' });
+  if (fallbackResp.status === 404) {
     return null;
   }
-  if (!resp.ok) {
-    throw new Error(`Refresh request failed with HTTP ${resp.status}`);
+  if (!fallbackResp.ok) {
+    throw new Error(`Refresh request failed with HTTP ${fallbackResp.status}`);
   }
-  return await resp.json();
+  return await fallbackResp.json();
 }
 
 // initial render

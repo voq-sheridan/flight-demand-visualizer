@@ -13,6 +13,7 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+      - run: npm run clean
       - run: npm run build
         env:
           OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}

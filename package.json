@@ -7,7 +7,7 @@
     "dev": "observable preview",
     "build": "observable build",
     "deploy": "observable deploy",
-    "clean": "observable clean",
+  "clean": "rm -rf dist src/.observablehq/cache",
     "predeploy": "touch dist/.nojekyll",
     "publish-gh": "npm run build && touch dist/.nojekyll && gh-pages -d dist --dotfiles"
   },

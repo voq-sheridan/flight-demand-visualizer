@@ -392,7 +392,7 @@ function buildUI() {
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';
-  depHeatmapTitle.textContent = 'Departures by Hour (Today, ET · Live (Current time))';
+  depHeatmapTitle.textContent = 'Departures by Hour (All Available Dates, ET · Live)';
 
   const depHeatmapContainer = document.createElement('div');
   depHeatmapContainer.className = 'heatmap-container';
@@ -405,7 +405,7 @@ function buildUI() {
 
   const arrHeatmapTitle = document.createElement('div');
   arrHeatmapTitle.className = 'heatmap-section-title';
-  arrHeatmapTitle.textContent = 'Arrivals by Hour (Today, ET · Live (Current time))';
+  arrHeatmapTitle.textContent = 'Arrivals by Hour (All Available Dates, ET · Live)';
 
   const arrHeatmapContainer = document.createElement('div');
   arrHeatmapContainer.className = 'heatmap-container';
@@ -802,7 +802,7 @@ function isYYZArrival(f) {
 }
 
 function buildDirectionalHeatmapData(flights, dateKeys, mode) {
-  const effectiveDateKeys = dateKeys.slice(-2);
+  const effectiveDateKeys = [...dateKeys];
   const byDateHour = new Map();
 
   flights.forEach((f) => {
@@ -1031,14 +1031,14 @@ function ensureMetaRow() {
   wrapper.appendChild(metaRow);
 }
 
-function updateMeta(visibleCount) {
+function updateMeta(selectedDateCount, totalLoadedCount) {
   if (!fetchedAt) return;
   ensureMetaRow();
   const baseText = `Last updated: ${fetchedAt.toLocaleString('en-CA', {
     timeZone: 'America/Toronto',
     dateStyle: 'medium',
     timeStyle: 'short',
-  })} ET  ·  ${visibleCount} flight${visibleCount !== 1 ? 's' : ''} shown`;
+  })} ET  ·  ${selectedDateCount} flight${selectedDateCount !== 1 ? 's' : ''} on selected date · ${totalLoadedCount} total loaded`;
   metaBaseSpan.textContent = baseText;
 }
 
@@ -1170,7 +1170,7 @@ function renderForSelection() {
   renderArrivalInsightBox(arrivalInsightBox, allFlights);
 
   renderTable(flightsForDate);
-  updateMeta(flightsForDate.length);
+  updateMeta(flightsForDate.length, allFlights.length);
 }
 
 function applyNewData(srcData) {

@@ -18,6 +18,26 @@ jobs:
       - run: npm run build
         env:
           AERODATABOX_API_KEY: ${{ secrets.AERODATABOX_API_KEY }}
+      - name: Validate generated flight snapshot
+        run: |
+          latest="$(ls -t dist/_file/data/flights*.json 2>/dev/null | head -n1 || true)"
+          if [ -z "$latest" ] || [ ! -f "$latest" ]; then
+            echo "::error::No generated flights*.json found after build."
+            exit 1
+          fi
+          echo "Using snapshot: $latest"
+          node -e '
+            const fs = require("fs");
+            const p = process.argv[1];
+            const data = JSON.parse(fs.readFileSync(p, "utf8"));
+            const flights = Array.isArray(data.flights) ? data.flights : [];
+            const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+            console.log(`Snapshot flights=${flights.length} warnings=${warnings.length}`);
+            if (flights.length === 0) {
+              console.error("::error::Generated flight snapshot is empty. Failing deploy to avoid publishing degraded data.");
+              process.exit(1);
+            }
+          ' "$latest"
       - name: Prepare stable data path
         run: |
           mkdir -p dist/data

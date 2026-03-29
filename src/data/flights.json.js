@@ -65,7 +65,9 @@ async function fetchJsonWithRetry(url, headers, maxAttempts = 3) {
       const retryAfterMs = parseRetryAfterMs(res.headers.get("retry-after"));
 
       if (!retryable || attempt === maxAttempts) {
-        throw new Error(`HTTP ${status}`);
+        const error = new Error(`HTTP ${status}`);
+        error.status = status;
+        throw error;
       }
 
       const backoffMs = retryAfterMs ?? Math.min(8000, 700 * 2 ** (attempt - 1));
@@ -82,49 +84,74 @@ async function fetchJsonWithRetry(url, headers, maxAttempts = 3) {
   throw lastError || new Error("Request failed");
 }
 
-function buildDateTimeCandidates(dateText) {
+const DAY_WINDOWS = [
+  { from: "00:00", to: "11:59" },
+  { from: "12:00", to: "23:59" }
+];
+
+function buildDateTimeCandidates(dateText, fromHHMM, toHHMM) {
   return [
-    { from: `${dateText}T00:00`, to: `${dateText}T23:59` },
-    { from: `${dateText}T00:00:00`, to: `${dateText}T23:59:59` },
-    { from: `${dateText}T00:00Z`, to: `${dateText}T23:59Z` }
+    { from: `${dateText}T${fromHHMM}`, to: `${dateText}T${toHHMM}` },
+    { from: `${dateText}T${fromHHMM}:00`, to: `${dateText}T${toHHMM}:59` },
+    { from: `${dateText}T${fromHHMM}:00Z`, to: `${dateText}T${toHHMM}:59Z` }
   ];
+}
+
+function isFutureDate(targetDate) {
+  const target = new Date(targetDate);
+  target.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return target.getTime() > today.getTime();
 }
 
 async function fetchFlightsForDate(targetDate) {
   const dateText = formatDate(targetDate);
   const headers = buildHeaders();
-  const candidates = buildDateTimeCandidates(dateText);
+  const departures = [];
+  const arrivals = [];
+  const windowErrors = [];
 
-  let json = null;
-  let lastError = null;
+  for (const window of DAY_WINDOWS) {
+    const candidates = buildDateTimeCandidates(dateText, window.from, window.to);
+    let windowJson = null;
+    let lastWindowError = null;
 
-  for (const candidate of candidates) {
-    const url = `${AERODATABOX_BASE}/flights/airports/iata/YYZ/${candidate.from}/${candidate.to}`;
-    try {
-      json = await fetchJsonWithRetry(url, headers, 3);
-      break;
-    } catch (err) {
-      lastError = err;
+    for (const candidate of candidates) {
+      const url = `${AERODATABOX_BASE}/flights/airports/iata/YYZ/${candidate.from}/${candidate.to}`;
+      try {
+        windowJson = await fetchJsonWithRetry(url, headers, 3);
+        break;
+      } catch (err) {
+        lastWindowError = err;
+      }
     }
+
+    if (!windowJson) {
+      windowErrors.push(lastWindowError || new Error("No valid response"));
+      continue;
+    }
+
+    departures.push(...(Array.isArray(windowJson?.departures) ? windowJson.departures : []));
+    arrivals.push(...(Array.isArray(windowJson?.arrivals) ? windowJson.arrivals : []));
+    await sleep(350);
   }
 
   try {
-    if (!json) {
-      throw lastError || new Error("No valid response");
+    if (windowErrors.length === DAY_WINDOWS.length) {
+      throw windowErrors[0];
     }
-    const departures = Array.isArray(json?.departures) ? json.departures : [];
-    const arrivals = Array.isArray(json?.arrivals) ? json.arrivals : [];
 
     const mappedDepartures = departures
       .map((flight) => ({
         type: "departure",
         flightNumber: flight?.number || "N/A",
         airline: flight?.airline?.name || flight?.number || "Unknown",
-        otherAirport: flight?.arrival?.airport?.name || "Unknown",
-        otherAirportCode: flight?.arrival?.airport?.iata || "N/A",
+        otherAirport: flight?.movement?.airport?.name || "Unknown",
+        otherAirportCode: flight?.movement?.airport?.iata || "N/A",
         departureIata: "YYZ",
-        arrivalIata: flight?.arrival?.airport?.iata || "",
-        scheduledTime: toScheduledIso(flight?.departure?.scheduledTime?.utc) || toScheduledIso(flight?.departure?.scheduledTime?.local),
+        arrivalIata: flight?.movement?.airport?.iata || "",
+        scheduledTime: toScheduledIso(flight?.movement?.scheduledTime?.utc) || toScheduledIso(flight?.movement?.scheduledTime?.local),
         status: mapStatus(flight?.status),
         resolvedStatus: mapStatus(flight?.status),
         date: dateText
@@ -136,11 +163,11 @@ async function fetchFlightsForDate(targetDate) {
         type: "arrival",
         flightNumber: flight?.number || "N/A",
         airline: flight?.airline?.name || flight?.number || "Unknown",
-        otherAirport: flight?.departure?.airport?.name || "Unknown",
-        otherAirportCode: flight?.departure?.airport?.iata || "N/A",
-        departureIata: flight?.departure?.airport?.iata || "",
+        otherAirport: flight?.movement?.airport?.name || "Unknown",
+        otherAirportCode: flight?.movement?.airport?.iata || "N/A",
+        departureIata: flight?.movement?.airport?.iata || "",
         arrivalIata: "YYZ",
-        scheduledTime: toScheduledIso(flight?.arrival?.scheduledTime?.utc) || toScheduledIso(flight?.arrival?.scheduledTime?.local),
+        scheduledTime: toScheduledIso(flight?.movement?.scheduledTime?.utc) || toScheduledIso(flight?.movement?.scheduledTime?.local),
         status: mapStatus(flight?.status),
         resolvedStatus: mapStatus(flight?.status),
         date: dateText
@@ -149,6 +176,11 @@ async function fetchFlightsForDate(targetDate) {
 
     return { flights: [...mappedDepartures, ...mappedArrivals], error: null };
   } catch (err) {
+    if (err?.status === 400 && isFutureDate(targetDate)) {
+      const msg = `No schedule returned for ${dateText} (future day may not be available on current API plan)`;
+      process.stderr.write(`AeroDataBox request skipped for ${dateText}: ${msg}\n`);
+      return { flights: [], error: msg };
+    }
     process.stderr.write(`AeroDataBox request failed for ${dateText}: ${err.message}\n`);
     return { flights: [], error: `Failed for ${dateText}: ${err.message}` };
   }
@@ -171,13 +203,17 @@ if (!AERODATABOX_API_KEY) {
     })
   );
 } else {
-  const [yesterdayResult, todayResult, tomorrowResult] = await Promise.all([
-    fetchFlightsForDate(yesterday),
-    fetchFlightsForDate(now),
-    fetchFlightsForDate(tomorrow)
-  ]);
+  const targets = [yesterday, now, tomorrow];
+  const results = [];
 
-  const results = [yesterdayResult, todayResult, tomorrowResult];
+  for (const [idx, target] of targets.entries()) {
+    const result = await fetchFlightsForDate(target);
+    results.push(result);
+    if (idx < targets.length - 1) {
+      await sleep(1200);
+    }
+  }
+
   const warnings = results.map((r) => r.error).filter(Boolean);
 
   const flights = results

@@ -1,8 +1,8 @@
 ---
-title: Toronto Pearson Airport — Flight Activity
+title: Flight Monitor Visualization - Toronto Pearson International Airport YYZ
 ---
 
-# ✈ Toronto Pearson International Airport (YYZ)— Flights Monitor
+Flight Monitor Visualization - Toronto Pearson International Airport YYZ
 
 All available flights currently returned by the API feed for departures and arrivals.  
 Data sourced from AeroDataBox via RapidAPI.
@@ -82,7 +82,7 @@ Data sourced from AeroDataBox via RapidAPI.
 
   .heatmap-section-title {
     margin: 0.55rem 0 0.25rem;
-    font-size: 0.9rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: #1f2937;
   }
@@ -98,7 +98,7 @@ Data sourced from AeroDataBox via RapidAPI.
     display: flex;
     align-items: flex-start;
     gap: 0.45rem;
-    margin-top: 0.6rem;
+    margin-top: 0.69rem;
     font-size: 0.8rem;
     color: #4b5563;
   }
@@ -377,7 +377,7 @@ function buildUI() {
   // Chart title
   const title = document.createElement('div');
   title.className = 'chart-title';
-  title.textContent = 'Flight volume by hour — all available flights';
+  title.textContent = '';
 
   // Selected date heading
   const dateHeading = document.createElement('div');

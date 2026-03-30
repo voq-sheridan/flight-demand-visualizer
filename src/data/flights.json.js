@@ -30,6 +30,18 @@ function toScheduledIso(value) {
   return dt.toISOString();
 }
 
+function deduplicateFlights(flights) {
+  const seen = new Map();
+  return flights.filter(flight => {
+    const time = new Date(flight.scheduledTime);
+    time.setMinutes(Math.floor(time.getMinutes() / 2) * 2, 0, 0);
+    const key = `${flight.type}-${flight.otherAirportCode}-${time.toISOString()}`;
+    if (seen.has(key)) return false;
+    seen.set(key, true);
+    return true;
+  });
+}
+
 function buildHeaders() {
   return {
     "x-rapidapi-host": AERODATABOX_HOST,
@@ -174,7 +186,15 @@ async function fetchFlightsForDate(targetDate) {
       }))
       .filter((f) => f.scheduledTime);
 
-    return { flights: [...mappedDepartures, ...mappedArrivals], error: null };
+    const rawDepartures = mappedDepartures;
+    const rawArrivals = mappedArrivals;
+    const dedupedDepartures = deduplicateFlights(rawDepartures);
+    const dedupedArrivals = deduplicateFlights(rawArrivals);
+
+    process.stderr.write(`Departures before dedup: ${rawDepartures.length}, after: ${dedupedDepartures.length}\n`);
+    process.stderr.write(`Arrivals before dedup: ${rawArrivals.length}, after: ${dedupedArrivals.length}\n`);
+
+    return { flights: [...dedupedDepartures, ...dedupedArrivals], error: null };
   } catch (err) {
     if (err?.status === 400 && isFutureDate(targetDate)) {
       const msg = `No schedule returned for ${dateText} (future day may not be available on current API plan)`;

@@ -272,6 +272,85 @@ Data sourced from AeroDataBox via RapidAPI.
     font-style: italic;
   }
 
+  .table-section {
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 0.75rem;
+  }
+
+  .table-summary {
+    font-size: 0.85rem;
+    color: #475569;
+    margin-bottom: 0.55rem;
+    font-weight: 600;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+  }
+
+  .table-pagination {
+    margin-top: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+  }
+
+  .pagination-btn {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    cursor: pointer;
+  }
+
+  .pagination-btn:hover:not(:disabled) {
+    background: #f1f5f9;
+  }
+
+  .pagination-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .pagination-info {
+    font-size: 0.82rem;
+    color: #475569;
+    min-width: 90px;
+    text-align: center;
+  }
+
+  .back-to-top-btn {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.42rem 0.72rem;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 40;
+  }
+
+  .back-to-top-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .list-panels {
     display: grid;
     grid-template-columns: repeat(2, minmax(300px, 1fr));
@@ -391,7 +470,7 @@ function buildUI() {
   // Subtitle
   const sub = document.createElement('div');
   sub.className = 'chart-sub';
-  sub.textContent = 'Departures and arrivals heatmaps include available YYZ flights for yesterday, today, and tomorrow.';
+  sub.textContent = 'Departures and arrivals heatmaps of YYZ flights for yesterday, today, and tomorrow.';
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';
@@ -518,6 +597,7 @@ const {
 } = buildUI();
 
 display(wrapper);
+display(tableContainer);
 
 // Time helpers in Toronto timezone
 function torontoDateKey(date) {
@@ -1027,6 +1107,8 @@ let dataWarnings = Array.isArray(data?.warnings) ? data.warnings : [];
 let availableDateKeys = [];
 let currentDateKey = null;
 let currentStatusFilter = 'all';
+let currentTablePage = 1;
+const ROWS_PER_PAGE = 25;
 
 let metaRow = null;
 let metaBaseSpan = null;
@@ -1123,18 +1205,63 @@ function renderTable(flightsForDate) {
     currentStatusFilter === 'all' ? true : f.resolvedStatus === currentStatusFilter
   );
 
-  if (filtered.length === 0) {
+  const tableSection = document.createElement('div');
+  tableSection.className = 'table-section';
+
+  const controlsRow = document.createElement('div');
+  controlsRow.className = 'control-row';
+  const statusGroup = document.createElement('div');
+  statusGroup.className = 'control-group';
+  const statusLabelEl = document.createElement('label');
+  statusLabelEl.textContent = 'Status';
+  const statusSelect = document.createElement('select');
+  statusSelect.innerHTML = `
+    <option value="all">All</option>
+    <option value="active">Active</option>
+    <option value="delayed">Delayed</option>
+    <option value="landed">Landed</option>
+    <option value="cancelled">Cancelled</option>
+    <option value="scheduled">Scheduled</option>
+  `;
+  statusSelect.value = currentStatusFilter;
+  statusSelect.addEventListener('change', () => {
+    currentStatusFilter = statusSelect.value;
+    currentTablePage = 1;
+    renderForSelection();
+  });
+  statusGroup.appendChild(statusLabelEl);
+  statusGroup.appendChild(statusSelect);
+  controlsRow.appendChild(statusGroup);
+  tableSection.appendChild(controlsRow);
+
+  const totalFlights = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalFlights / ROWS_PER_PAGE));
+  currentTablePage = Math.min(Math.max(1, currentTablePage), totalPages);
+  const startIndex = totalFlights === 0 ? 0 : (currentTablePage - 1) * ROWS_PER_PAGE;
+  const endIndex = totalFlights === 0 ? 0 : Math.min(startIndex + ROWS_PER_PAGE, totalFlights);
+  const pageRows = filtered.slice(startIndex, endIndex);
+
+  const summary = document.createElement('div');
+  summary.className = 'table-summary';
+  summary.textContent = `Showing ${totalFlights === 0 ? 0 : startIndex + 1} to ${endIndex} of ${totalFlights} flights`;
+  tableSection.appendChild(summary);
+
+  if (totalFlights === 0) {
     const box = document.createElement('div');
     box.className = 'empty-box';
     box.textContent = 'No flights found for this date and filters.';
-    tableContainer.appendChild(box);
+    tableSection.appendChild(box);
+    tableContainer.appendChild(tableSection);
     return;
   }
+
+  const tableScroll = document.createElement('div');
+  tableScroll.className = 'table-scroll';
 
   const table = document.createElement('table');
   table.className = 'flight-board';
 
-  const rows = filtered.map((f) => {
+  const rows = pageRows.map((f) => {
     const airport = f.otherAirportCode
       ? `${f.otherAirport} (${f.otherAirportCode})`
       : f.otherAirport;
@@ -1163,7 +1290,44 @@ function renderTable(flightsForDate) {
     </thead>
     <tbody>${rows}</tbody>`;
 
-  tableContainer.appendChild(table);
+  tableScroll.appendChild(table);
+  tableSection.appendChild(tableScroll);
+
+  const pagination = document.createElement('div');
+  pagination.className = 'table-pagination';
+
+  const prevBtn = document.createElement('button');
+  prevBtn.type = 'button';
+  prevBtn.className = 'pagination-btn';
+  prevBtn.textContent = 'Previous';
+  prevBtn.disabled = currentTablePage <= 1;
+  prevBtn.addEventListener('click', () => {
+    if (currentTablePage <= 1) return;
+    currentTablePage -= 1;
+    renderForSelection();
+  });
+
+  const pageInfo = document.createElement('div');
+  pageInfo.className = 'pagination-info';
+  pageInfo.textContent = `Page ${currentTablePage} of ${totalPages}`;
+
+  const nextBtn = document.createElement('button');
+  nextBtn.type = 'button';
+  nextBtn.className = 'pagination-btn';
+  nextBtn.textContent = 'Next';
+  nextBtn.disabled = currentTablePage >= totalPages;
+  nextBtn.addEventListener('click', () => {
+    if (currentTablePage >= totalPages) return;
+    currentTablePage += 1;
+    renderForSelection();
+  });
+
+  pagination.appendChild(prevBtn);
+  pagination.appendChild(pageInfo);
+  pagination.appendChild(nextBtn);
+  tableSection.appendChild(pagination);
+
+  tableContainer.appendChild(tableSection);
 }
 
 function renderForSelection() {
@@ -1221,6 +1385,7 @@ function applyNewData(srcData) {
   lastFetchedAtIso = srcData.fetchedAt || lastFetchedAtIso;
   loadedDates = srcData?.dates || loadedDates;
   dataWarnings = Array.isArray(srcData?.warnings) ? srcData.warnings : dataWarnings;
+  currentTablePage = 1;
   updateSnapshotTotals(srcData);
   recomputeDateOptions();
   renderForSelection();
@@ -1294,9 +1459,30 @@ const refreshTimer = setInterval(() => {
 
 let onVisibilityChangeHandler = null;
 let beforeUnloadHandler = null;
+let onScrollHandler = null;
+let backToTopBtn = null;
 
 // Clean up on notebook disposal (if runtime provides a hook)
 if (typeof window !== 'undefined') {
+  backToTopBtn = document.createElement('button');
+  backToTopBtn.type = 'button';
+  backToTopBtn.className = 'back-to-top-btn';
+  backToTopBtn.textContent = 'Back to top';
+  backToTopBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  document.body.appendChild(backToTopBtn);
+
+  onScrollHandler = () => {
+    if (!backToTopBtn) return;
+    if (window.scrollY > 300) {
+      backToTopBtn.classList.add('visible');
+    } else {
+      backToTopBtn.classList.remove('visible');
+    }
+  };
+  window.addEventListener('scroll', onScrollHandler, { passive: true });
+
   onVisibilityChangeHandler = () => {
     isPageActive = document.visibilityState === 'visible';
     if (isPageActive) {
@@ -1308,6 +1494,13 @@ if (typeof window !== 'undefined') {
   beforeUnloadHandler = () => {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
+    if (onScrollHandler) {
+      window.removeEventListener('scroll', onScrollHandler);
+    }
+    if (backToTopBtn) {
+      backToTopBtn.remove();
+      backToTopBtn = null;
+    }
     if (onVisibilityChangeHandler) {
       window.removeEventListener('visibilitychange', onVisibilityChangeHandler);
     }
@@ -1323,6 +1516,13 @@ if (typeof invalidation !== 'undefined') {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
     if (typeof window !== 'undefined') {
+      if (onScrollHandler) {
+        window.removeEventListener('scroll', onScrollHandler);
+      }
+      if (backToTopBtn) {
+        backToTopBtn.remove();
+        backToTopBtn = null;
+      }
       if (onVisibilityChangeHandler) {
         window.removeEventListener('visibilitychange', onVisibilityChangeHandler);
       }

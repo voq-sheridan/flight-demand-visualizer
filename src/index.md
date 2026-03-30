@@ -1040,7 +1040,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   const todayRowIndex = dateKeys.indexOf(todayKey);
 
   const rowIndexByKey = new Map(dateKeys.map((d, i) => [d, i]));
-  const totalColumnGap = 14;
+  const totalColumnGap = 20;
   const totalsByDate = new Map(
     dateKeys.map((dateKey) => [
       dateKey,

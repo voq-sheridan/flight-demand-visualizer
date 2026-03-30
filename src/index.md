@@ -1195,27 +1195,30 @@ function applyNewData(srcData) {
 }
 
 async function fetchLatestFlightsData() {
-  // Prefer framework-resolved attachment URL (normally present in both preview and static builds).
+  // Use stable path first to avoid stale-hash 404s when users return after a redeploy.
+  const stableUrl = `./data/flights.json?_=${Date.now()}`;
+  const stableResp = await fetch(stableUrl, { cache: 'no-store' });
+  if (stableResp.ok) {
+    return await stableResp.json();
+  }
+  if (stableResp.status !== 404) {
+    throw new Error(`Refresh request failed with HTTP ${stableResp.status}`);
+  }
+
+  // Fallback for local preview/dev cases where stable path is absent.
   const attachmentUrl = await FileAttachment("./data/flights.json").url();
-  const primaryUrl = attachmentUrl.includes('?')
+  const attachmentFetchUrl = attachmentUrl.includes('?')
     ? `${attachmentUrl}&_=${Date.now()}`
     : `${attachmentUrl}?_=${Date.now()}`;
 
-  const primaryResp = await fetch(primaryUrl, { cache: 'no-store' });
-  if (primaryResp.ok) {
-    return await primaryResp.json();
-  }
-
-  // Secondary fallback: stable path copied by CI deploy hardening.
-  const stableUrl = `./data/flights.json?_=${Date.now()}`;
-  const stableResp = await fetch(stableUrl, { cache: 'no-store' });
-  if (stableResp.status === 404) {
+  const attachmentResp = await fetch(attachmentFetchUrl, { cache: 'no-store' });
+  if (attachmentResp.status === 404) {
     return null;
   }
-  if (!stableResp.ok) {
-    throw new Error(`Refresh request failed with HTTP ${stableResp.status}`);
+  if (!attachmentResp.ok) {
+    throw new Error(`Refresh request failed with HTTP ${attachmentResp.status}`);
   }
-  return await stableResp.json();
+  return await attachmentResp.json();
 }
 
 // initial render

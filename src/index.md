@@ -172,7 +172,7 @@ Data sourced from AeroDataBox via RapidAPI.
 
   .staff-insight-box h4 {
     margin: 0;
-    font-size: 0.84rem;
+    font-size: 1.25rem;
     font-weight: 700;
     line-height: 1.3;
   }
@@ -192,7 +192,7 @@ Data sourced from AeroDataBox via RapidAPI.
     margin: 0.35rem 0 0.15rem;
     padding: 0.14rem 0.45rem;
     border-radius: 999px;
-    font-size: 0.72rem;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: 0.01em;
     background: rgba(255, 255, 255, 0.55);

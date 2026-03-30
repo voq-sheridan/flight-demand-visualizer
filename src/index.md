@@ -424,24 +424,24 @@ function buildUI() {
       <span class="heatmap-legend-range">0 flights</span>
     </span>
     <span class="heatmap-legend-item">
-      <span class="heatmap-swatch" style="background:#fee5d9" title="Low / 1–5 flights"></span>
+      <span class="heatmap-swatch" style="background:#fee5d9" title="Low / 1–20 flights"></span>
       <span class="heatmap-legend-name">Low</span>
-      <span class="heatmap-legend-range">1–5 flights</span>
+      <span class="heatmap-legend-range">1–20 flights</span>
     </span>
     <span class="heatmap-legend-item">
-      <span class="heatmap-swatch" style="background:#fcae91" title="Moderate / 6–12 flights"></span>
+      <span class="heatmap-swatch" style="background:#fcae91" title="Moderate / 21–50 flights"></span>
       <span class="heatmap-legend-name">Moderate</span>
-      <span class="heatmap-legend-range">6–12 flights</span>
+      <span class="heatmap-legend-range">21–50 flights</span>
     </span>
     <span class="heatmap-legend-item">
-      <span class="heatmap-swatch" style="background:#fb6a4a" title="Busy / 13–20 flights"></span>
+      <span class="heatmap-swatch" style="background:#fb6a4a" title="Busy / 51–80 flights"></span>
       <span class="heatmap-legend-name">Busy</span>
-      <span class="heatmap-legend-range">13–20 flights</span>
+      <span class="heatmap-legend-range">51–80 flights</span>
     </span>
     <span class="heatmap-legend-item">
-      <span class="heatmap-swatch" style="background:#cb181d" title="Peak / 21+ flights"></span>
+      <span class="heatmap-swatch" style="background:#cb181d" title="Peak / 81+ flights"></span>
       <span class="heatmap-legend-name">Peak</span>
-      <span class="heatmap-legend-range">21+ flights</span>
+      <span class="heatmap-legend-range">81+ flights</span>
     </span>`;
 
   // Tooltip for bars
@@ -574,6 +574,9 @@ function formatClockFromMinutes(totalMinutes) {
   return formatClock12(hour, minute);
 }
 
+const LOW_DEMAND_MAX_FLIGHTS = 20;
+const HIGH_DEMAND_MIN_FLIGHTS = 81;
+
 function getPeakHourForToday(flights, mode) {
   const todayDateKey = torontoDateKey(new Date());
   const hourlyTotals = Array.from({ length: 24 }, () => 0);
@@ -610,13 +613,25 @@ function applyInsightState(box, state, html) {
 
 function renderDepartureInsightBox(box, flights) {
   const { peakHour, peakTotal } = getPeakHourForToday(flights, 'departures');
-  if (peakTotal < 5) {
+  if (peakTotal <= LOW_DEMAND_MAX_FLIGHTS) {
     applyInsightState(
       box,
       'staff-state-low',
       `
         <h4>🛫 Departure Staffing Advisory</h4>
         <div class="staff-insight-badge"><strong>✓ Low Demand — Standard staffing</strong></div>
+      `
+    );
+    return;
+  }
+
+  if (peakTotal < HIGH_DEMAND_MIN_FLIGHTS) {
+    applyInsightState(
+      box,
+      'staff-state-upcoming',
+      `
+        <h4>🛫 Departure Staffing Advisory</h4>
+        <div class="staff-insight-badge"><strong>ℹ Moderate Demand — Monitor staffing</strong></div>
       `
     );
     return;
@@ -668,13 +683,25 @@ function renderDepartureInsightBox(box, flights) {
 
 function renderArrivalInsightBox(box, flights) {
   const { peakHour, peakTotal } = getPeakHourForToday(flights, 'arrivals');
-  if (peakTotal < 5) {
+  if (peakTotal <= LOW_DEMAND_MAX_FLIGHTS) {
     applyInsightState(
       box,
       'staff-state-low',
       `
         <h4>🛬 Arrival Staffing Advisory</h4>
         <div class="staff-insight-badge"><strong>✓ Low Demand — Standard staffing</strong></div>
+      `
+    );
+    return;
+  }
+
+  if (peakTotal < HIGH_DEMAND_MIN_FLIGHTS) {
+    applyInsightState(
+      box,
+      'staff-state-upcoming',
+      `
+        <h4>🛬 Arrival Staffing Advisory</h4>
+        <div class="staff-insight-badge"><strong>ℹ Moderate Demand — Monitor staffing</strong></div>
       `
     );
     return;
@@ -762,7 +789,7 @@ function buildBinsForDate(flights, dateKey) {
 function heatmapColor(total) {
   const heatmapColorScale = d3
     .scaleThreshold()
-    .domain([1, 6, 13, 21])
+    .domain([1, 21, 51, 81])
     .range(['#f5f5f5', '#fee5d9', '#fcae91', '#fb6a4a', '#cb181d']);
   return heatmapColorScale(total);
 }

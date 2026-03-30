@@ -1348,8 +1348,28 @@ function applyNewData(srcData) {
 }
 
 async function fetchLatestFlightsData() {
+  const buildStableDataUrl = () => {
+    if (typeof window === 'undefined') {
+      return `./data/flights.json?_=${Date.now()}`;
+    }
+
+    let basePath = window.location.pathname || '/';
+    if (basePath.endsWith('/')) {
+      // already a directory path
+    } else if (/\.[a-zA-Z0-9]+$/.test(basePath)) {
+      // file-like path such as /index.html
+      basePath = basePath.replace(/[^/]+$/, '');
+    } else {
+      // directory path accessed without trailing slash
+      basePath = `${basePath}/`;
+    }
+
+    const normalizedBase = basePath.startsWith('/') ? basePath : `/${basePath}`;
+    return `${window.location.origin}${normalizedBase}data/flights.json?_=${Date.now()}`;
+  };
+
   // Use stable path first to avoid stale-hash 404s when users return after a redeploy.
-  const stableUrl = `./data/flights.json?_=${Date.now()}`;
+  const stableUrl = buildStableDataUrl();
   const stableResp = await fetch(stableUrl, { cache: 'no-store' });
   if (stableResp.ok) {
     return await stableResp.json();

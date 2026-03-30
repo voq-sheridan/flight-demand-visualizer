@@ -229,10 +229,15 @@ Data sourced from AeroDataBox via RapidAPI.
   }
 
   .date-heading {
-    font-size: 0.9rem;
+    font-size: 2rem;
     font-weight: 600;
     color: #111827;
     margin: 0.25rem 0 0.35rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+    background: #ffffff;
+    display: inline-block;
   }
 
   .chart-tooltip {

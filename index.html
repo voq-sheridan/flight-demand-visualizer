@@ -19,14 +19,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.1d89a2a3.json","lastModified":1774895331325,"size":828511});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.243fc728.json","lastModified":1774895597355,"size":828928});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "4f5647ff", inputs: ["display","data","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","heatmapLegend","tooltip","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","LOW_DEMAND_MAX_FLIGHTS","HIGH_DEMAND_MIN_FLIGHTS","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","buildHeatmapBands","currentHeatmapBands","updateHeatmapLegendFromBands","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","loadedDates","dataWarnings","availableDateKeys","currentDateKey","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler","onScrollHandler","backToTopBtn","onUnhandledRejectionHandler"], body: async (display,data,FileAttachment,invalidation) => {
+define({id: "ef1aadb1", inputs: ["display","data","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","heatmapLegend","tooltip","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","LOW_DEMAND_MAX_FLIGHTS","HIGH_DEMAND_MIN_FLIGHTS","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","buildHeatmapBands","currentHeatmapBands","updateHeatmapLegendFromBands","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","loadedDates","dataWarnings","availableDateKeys","currentDateKey","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateDateHeadingClock","dateHeadingTimer","updateSnapshotTotals","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler","onScrollHandler","backToTopBtn","onUnhandledRejectionHandler"], body: async (display,data,FileAttachment,invalidation) => {
 // Render live summary, busyness chart and auto-refresh (15 minutes)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 let d3;
@@ -888,6 +888,28 @@ function updateCountdown() {
 
 const countdownTimer = setInterval(updateCountdown, 1000);
 
+function updateDateHeadingClock() {
+  if (!currentDateKey) return;
+  const d = parseDateKey(currentDateKey);
+  const dateText = d.toLocaleDateString('en-CA', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+  const currentTimeEt = new Date().toLocaleTimeString('en-CA', {
+    timeZone: 'America/Toronto',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  dateHeading.textContent = `${dateText} · ${currentTimeEt} ET`;
+}
+
+const dateHeadingTimer = setInterval(updateDateHeadingClock, 1000);
+
 function updateSnapshotTotals(srcData) {
   const flights = Array.isArray(srcData?.flights) ? srcData.flights : [];
   const total = flights.length;
@@ -933,22 +955,8 @@ function renderForSelection() {
   drawDirectionalHeatmap(depHeatmapSvg, depHeatmapContainer, depHeatmapData, sharedMax);
   drawDirectionalHeatmap(arrHeatmapSvg, arrHeatmapContainer, arrHeatmapData, sharedMax);
 
-  // selected date heading + current Toronto time
-  const d = parseDateKey(currentDateKey);
-  const dateText = d.toLocaleDateString('en-CA', {
-    timeZone: 'UTC',
-    weekday: 'long',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-  const currentTimeEt = new Date().toLocaleTimeString('en-CA', {
-    timeZone: 'America/Toronto',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  });
-  dateHeading.textContent = `${dateText} · ${currentTimeEt} ET`;
+  // selected date heading + continuously updated current Toronto time
+  updateDateHeadingClock();
 
   renderDepartureInsightBox(departureInsightBox, allFlights);
   renderArrivalInsightBox(arrivalInsightBox, allFlights);
@@ -1105,6 +1113,7 @@ if (typeof window !== 'undefined') {
   beforeUnloadHandler = () => {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
+    clearInterval(dateHeadingTimer);
     if (onScrollHandler) {
       window.removeEventListener('scroll', onScrollHandler);
     }
@@ -1129,6 +1138,7 @@ if (typeof invalidation !== 'undefined') {
   invalidation.then(() => {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
+    clearInterval(dateHeadingTimer);
     if (typeof window !== 'undefined') {
       if (onScrollHandler) {
         window.removeEventListener('scroll', onScrollHandler);
@@ -1150,7 +1160,7 @@ if (typeof invalidation !== 'undefined') {
   });
 }
 
-return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,snapshotTotals,departureInsightBox,arrivalInsightBox,metrics,chartCard,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,heatmapLegend,tooltip,torontoDateKey,torontoHour,hourLabelFromIndex,torontoHourMinute,torontoMinutesNow,formatClock12,formatClockFromMinutes,LOW_DEMAND_MAX_FLIGHTS,HIGH_DEMAND_MIN_FLIGHTS,getPeakHourForToday,applyInsightState,renderDepartureInsightBox,renderArrivalInsightBox,buildBinsForDate,buildHeatmapBands,currentHeatmapBands,updateHeatmapLegendFromBands,heatmapColor,parseDateKey,shiftDateKey,getHeatmapDateKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,lastFetchedAtIso,loadedDates,dataWarnings,availableDateKeys,currentDateKey,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,isPageActive,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,updateSnapshotTotals,renderForSelection,applyNewData,fetchLatestFlightsData,runRefreshCycle,refreshTimer,onVisibilityChangeHandler,beforeUnloadHandler,onScrollHandler,backToTopBtn,onUnhandledRejectionHandler};
+return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,snapshotTotals,departureInsightBox,arrivalInsightBox,metrics,chartCard,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,heatmapLegend,tooltip,torontoDateKey,torontoHour,hourLabelFromIndex,torontoHourMinute,torontoMinutesNow,formatClock12,formatClockFromMinutes,LOW_DEMAND_MAX_FLIGHTS,HIGH_DEMAND_MIN_FLIGHTS,getPeakHourForToday,applyInsightState,renderDepartureInsightBox,renderArrivalInsightBox,buildBinsForDate,buildHeatmapBands,currentHeatmapBands,updateHeatmapLegendFromBands,heatmapColor,parseDateKey,shiftDateKey,getHeatmapDateKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,lastFetchedAtIso,loadedDates,dataWarnings,availableDateKeys,currentDateKey,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,isPageActive,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,updateDateHeadingClock,dateHeadingTimer,updateSnapshotTotals,renderForSelection,applyNewData,fetchLatestFlightsData,runRefreshCycle,refreshTimer,onVisibilityChangeHandler,beforeUnloadHandler,onScrollHandler,backToTopBtn,onUnhandledRejectionHandler};
 }});
 
 define({id: "89e04ded", inputs: ["data","display"], body: (data,display) => {
@@ -1767,12 +1777,12 @@ Data sourced from AeroDataBox via RapidAPI.</p>
   }
 </style>
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
-<div class="observablehq observablehq--block"><!--:4f5647ff:--></div>
+<div class="observablehq observablehq--block"><!--:ef1aadb1:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
 <div class="observablehq observablehq--block"><!--:007afbce:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-30T18:28:39">Mar 30, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-30T18:33:04">Mar 30, 2026</a>.</div>
 </footer>
 </div>
 </body>

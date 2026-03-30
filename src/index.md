@@ -1040,13 +1040,14 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   const todayRowIndex = dateKeys.indexOf(todayKey);
 
   const rowIndexByKey = new Map(dateKeys.map((d, i) => [d, i]));
+  const totalColumnGap = 14;
   const totalsByDate = new Map(
     dateKeys.map((dateKey) => [
       dateKey,
       d3.sum(cells.filter((c) => c.dateKey === dateKey), (c) => c.total)
     ])
   );
-  const totalColX = margin.left + cols * (cellSize + gap);
+  const totalColX = margin.left + gridWidth + totalColumnGap;
 
   g
     .selectAll('.heatmap-hour-label')

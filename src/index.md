@@ -112,7 +112,7 @@ Data sourced from AeroDataBox via RapidAPI.
   }
 
   .heatmap-legend-name {
-    font-size: 0.72rem;
+    font-size: 1rem;
     font-weight: 700;
     color: #1f2937;
     line-height: 1.1;
@@ -120,15 +120,15 @@ Data sourced from AeroDataBox via RapidAPI.
   }
 
   .heatmap-legend-range {
-    font-size: 0.68rem;
+    font-size: 0.90rem;
     color: #6b7280;
     line-height: 1.1;
     text-align: center;
   }
 
   .heatmap-swatch {
-    width: 14px;
-    height: 14px;
+    width: 25px;
+    height: 25px;
     border-radius: 4px;
     display: inline-block;
     border: 1px solid #e5e7eb;

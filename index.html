@@ -19,14 +19,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.be263214.json","lastModified":1774850083368,"size":813600});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.00824b28.json","lastModified":1774850238205,"size":813568});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "706cc591", inputs: ["display","data","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","heatmapLegend","tooltip","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","LOW_DEMAND_MAX_FLIGHTS","HIGH_DEMAND_MIN_FLIGHTS","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","buildHeatmapBands","currentHeatmapBands","updateHeatmapLegendFromBands","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","loadedDates","dataWarnings","availableDateKeys","currentDateKey","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler","onScrollHandler","backToTopBtn"], body: async (display,data,FileAttachment,invalidation) => {
+define({id: "04d7335c", inputs: ["display","data","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","heatmapLegend","tooltip","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","LOW_DEMAND_MAX_FLIGHTS","HIGH_DEMAND_MIN_FLIGHTS","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","buildHeatmapBands","currentHeatmapBands","updateHeatmapLegendFromBands","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","loadedDates","dataWarnings","availableDateKeys","currentDateKey","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler","onScrollHandler","backToTopBtn"], body: async (display,data,FileAttachment,invalidation) => {
 // Render live summary, busyness chart and auto-refresh (1 hour)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 let d3;
@@ -966,8 +966,28 @@ function applyNewData(srcData) {
 }
 
 async function fetchLatestFlightsData() {
+  const buildStableDataUrl = () => {
+    if (typeof window === 'undefined') {
+      return `./data/flights.json?_=${Date.now()}`;
+    }
+
+    let basePath = window.location.pathname || '/';
+    if (basePath.endsWith('/')) {
+      // already a directory path
+    } else if (/\.[a-zA-Z0-9]+$/.test(basePath)) {
+      // file-like path such as /index.html
+      basePath = basePath.replace(/[^/]+$/, '');
+    } else {
+      // directory path accessed without trailing slash
+      basePath = `${basePath}/`;
+    }
+
+    const normalizedBase = basePath.startsWith('/') ? basePath : `/${basePath}`;
+    return `${window.location.origin}${normalizedBase}data/flights.json?_=${Date.now()}`;
+  };
+
   // Use stable path first to avoid stale-hash 404s when users return after a redeploy.
-  const stableUrl = `./data/flights.json?_=${Date.now()}`;
+  const stableUrl = buildStableDataUrl();
   const stableResp = await fetch(stableUrl, { cache: 'no-store' });
   if (stableResp.ok) {
     return await stableResp.json();
@@ -1724,12 +1744,12 @@ Data sourced from AeroDataBox via RapidAPI.</p>
   }
 </style>
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
-<div class="observablehq observablehq--block"><!--:706cc591:--></div>
+<div class="observablehq observablehq--block"><!--:04d7335c:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
 <div class="observablehq observablehq--block"><!--:007afbce:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-30T05:54:32">Mar 30, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-30T05:57:06">Mar 30, 2026</a>.</div>
 </footer>
 </div>
 </body>

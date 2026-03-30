@@ -1439,9 +1439,24 @@ let onVisibilityChangeHandler = null;
 let beforeUnloadHandler = null;
 let onScrollHandler = null;
 let backToTopBtn = null;
+let onUnhandledRejectionHandler = null;
 
 // Clean up on notebook disposal (if runtime provides a hook)
 if (typeof window !== 'undefined') {
+  // Some browser extensions can throw a benign async message-channel rejection
+  // into page context. Ignore that specific known message to avoid noisy uncaught errors.
+  onUnhandledRejectionHandler = (event) => {
+    const reason = event?.reason;
+    const message = typeof reason === 'string'
+      ? reason
+      : String(reason?.message || '');
+
+    if (message.includes('A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received')) {
+      event.preventDefault();
+    }
+  };
+  window.addEventListener('unhandledrejection', onUnhandledRejectionHandler);
+
   backToTopBtn = document.createElement('button');
   backToTopBtn.type = 'button';
   backToTopBtn.className = 'back-to-top-btn';
@@ -1482,6 +1497,9 @@ if (typeof window !== 'undefined') {
     if (onVisibilityChangeHandler) {
       window.removeEventListener('visibilitychange', onVisibilityChangeHandler);
     }
+    if (onUnhandledRejectionHandler) {
+      window.removeEventListener('unhandledrejection', onUnhandledRejectionHandler);
+    }
   };
 
   window.addEventListener('visibilitychange', onVisibilityChangeHandler);
@@ -1503,6 +1521,9 @@ if (typeof invalidation !== 'undefined') {
       }
       if (onVisibilityChangeHandler) {
         window.removeEventListener('visibilitychange', onVisibilityChangeHandler);
+      }
+      if (onUnhandledRejectionHandler) {
+        window.removeEventListener('unhandledrejection', onUnhandledRejectionHandler);
       }
       if (beforeUnloadHandler) {
         window.removeEventListener('beforeunload', beforeUnloadHandler);

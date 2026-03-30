@@ -546,10 +546,6 @@ function buildUI() {
 
   wrapper.appendChild(chartCard);
 
-  // Container for the flight table below the top row
-  const tableContainer = document.createElement('div');
-  tableContainer.style.marginTop = '1.25rem';
-
   return {
     wrapper,
     summaryPanel,
@@ -564,8 +560,7 @@ function buildUI() {
     arrHeatmapSvg,
     arrHeatmapContainer,
     heatmapLegend,
-    tooltip,
-    tableContainer
+    tooltip
   };
 }
 
@@ -594,12 +589,10 @@ const {
   arrHeatmapSvg,
   arrHeatmapContainer,
   heatmapLegend,
-  tooltip,
-  tableContainer
+  tooltip
 } = buildUI();
 
 display(wrapper);
-display(tableContainer);
 
 // Time helpers in Toronto timezone
 function torontoDateKey(date) {
@@ -1160,9 +1153,6 @@ let loadedDates = data?.dates || {};
 let dataWarnings = Array.isArray(data?.warnings) ? data.warnings : [];
 let availableDateKeys = [];
 let currentDateKey = null;
-let currentStatusFilter = 'all';
-let currentTablePage = 1;
-const ROWS_PER_PAGE = 25;
 
 let metaRow = null;
 let metaBaseSpan = null;
@@ -1253,137 +1243,6 @@ function updateSnapshotTotals(srcData) {
   snapshotTotals.textContent = `Snapshot totals (all loaded dates) — Total: ${total} · Departures: ${departures} · Arrivals: ${arrivals}${warningSuffix}`;
 }
 
-function renderTable(flightsForDate) {
-  tableContainer.innerHTML = '';
-  const filtered = flightsForDate.filter(f =>
-    currentStatusFilter === 'all' ? true : f.resolvedStatus === currentStatusFilter
-  );
-
-  const tableSection = document.createElement('div');
-  tableSection.className = 'table-section';
-
-  const controlsRow = document.createElement('div');
-  controlsRow.className = 'control-row';
-  const statusGroup = document.createElement('div');
-  statusGroup.className = 'control-group';
-  const statusLabelEl = document.createElement('label');
-  statusLabelEl.textContent = 'Status';
-  const statusSelect = document.createElement('select');
-  statusSelect.innerHTML = `
-    <option value="all">All</option>
-    <option value="active">Active</option>
-    <option value="delayed">Delayed</option>
-    <option value="landed">Landed</option>
-    <option value="cancelled">Cancelled</option>
-    <option value="scheduled">Scheduled</option>
-  `;
-  statusSelect.value = currentStatusFilter;
-  statusSelect.addEventListener('change', () => {
-    currentStatusFilter = statusSelect.value;
-    currentTablePage = 1;
-    renderForSelection();
-  });
-  statusGroup.appendChild(statusLabelEl);
-  statusGroup.appendChild(statusSelect);
-  controlsRow.appendChild(statusGroup);
-  tableSection.appendChild(controlsRow);
-
-  const totalFlights = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalFlights / ROWS_PER_PAGE));
-  currentTablePage = Math.min(Math.max(1, currentTablePage), totalPages);
-  const startIndex = totalFlights === 0 ? 0 : (currentTablePage - 1) * ROWS_PER_PAGE;
-  const endIndex = totalFlights === 0 ? 0 : Math.min(startIndex + ROWS_PER_PAGE, totalFlights);
-  const pageRows = filtered.slice(startIndex, endIndex);
-
-  const summary = document.createElement('div');
-  summary.className = 'table-summary';
-  summary.textContent = `Showing ${totalFlights === 0 ? 0 : startIndex + 1} to ${endIndex} of ${totalFlights} flights`;
-  tableSection.appendChild(summary);
-
-  if (totalFlights === 0) {
-    const box = document.createElement('div');
-    box.className = 'empty-box';
-    box.textContent = 'No flights found for this date and filters.';
-    tableSection.appendChild(box);
-    tableContainer.appendChild(tableSection);
-    return;
-  }
-
-  const tableScroll = document.createElement('div');
-  tableScroll.className = 'table-scroll';
-
-  const table = document.createElement('table');
-  table.className = 'flight-board';
-
-  const rows = pageRows.map((f) => {
-    const airport = f.otherAirportCode
-      ? `${f.otherAirport} (${f.otherAirportCode})`
-      : f.otherAirport;
-    const label = statusLabel(f.resolvedStatus, f.status, f.delay);
-    return `
-      <tr class="${rowClass(f.resolvedStatus)}">
-        <td><span class="badge badge-${f.type === 'departure' ? 'dep' : 'arr'}">${f.type === 'departure' ? 'DEP' : 'ARR'}</span></td>
-        <td><strong>${f.flightNumber}</strong></td>
-        <td>${f.airline}</td>
-        <td>${airport}</td>
-        <td>${formatTime(f.scheduledTime)}</td>
-        <td><span class="status-pill ${pillClass(f.resolvedStatus)}">${label}</span></td>
-      </tr>`;
-  }).join('');
-
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Flight</th>
-        <th>Airline</th>
-        <th>${'Origin / Destination'}</th>
-        <th>Scheduled (ET)</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>`;
-
-  tableScroll.appendChild(table);
-  tableSection.appendChild(tableScroll);
-
-  const pagination = document.createElement('div');
-  pagination.className = 'table-pagination';
-
-  const prevBtn = document.createElement('button');
-  prevBtn.type = 'button';
-  prevBtn.className = 'pagination-btn';
-  prevBtn.textContent = 'Previous';
-  prevBtn.disabled = currentTablePage <= 1;
-  prevBtn.addEventListener('click', () => {
-    if (currentTablePage <= 1) return;
-    currentTablePage -= 1;
-    renderForSelection();
-  });
-
-  const pageInfo = document.createElement('div');
-  pageInfo.className = 'pagination-info';
-  pageInfo.textContent = `Page ${currentTablePage} of ${totalPages}`;
-
-  const nextBtn = document.createElement('button');
-  nextBtn.type = 'button';
-  nextBtn.className = 'pagination-btn';
-  nextBtn.textContent = 'Next';
-  nextBtn.disabled = currentTablePage >= totalPages;
-  nextBtn.addEventListener('click', () => {
-    if (currentTablePage >= totalPages) return;
-    currentTablePage += 1;
-    renderForSelection();
-  });
-
-  pagination.appendChild(prevBtn);
-  pagination.appendChild(pageInfo);
-  pagination.appendChild(nextBtn);
-  tableSection.appendChild(pagination);
-
-  tableContainer.appendChild(tableSection);
-}
-
 function renderForSelection() {
   if (!currentDateKey) return;
   const flightsForDate = allFlights.filter(f => {
@@ -1431,7 +1290,6 @@ function renderForSelection() {
   renderDepartureInsightBox(departureInsightBox, allFlights);
   renderArrivalInsightBox(arrivalInsightBox, allFlights);
 
-  renderTable(flightsForDate);
   updateMeta(flightsForDate.length, allFlights.length);
 }
 
@@ -1441,7 +1299,6 @@ function applyNewData(srcData) {
   lastFetchedAtIso = srcData.fetchedAt || lastFetchedAtIso;
   loadedDates = srcData?.dates || loadedDates;
   dataWarnings = Array.isArray(srcData?.warnings) ? srcData.warnings : dataWarnings;
-  currentTablePage = 1;
   updateSnapshotTotals(srcData);
   recomputeDateOptions();
   renderForSelection();

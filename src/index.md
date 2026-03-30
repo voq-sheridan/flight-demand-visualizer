@@ -135,7 +135,7 @@ Data sourced from AeroDataBox via RapidAPI.
   }
 
   .heatmap-axis-label {
-    font-size: 0.84rem;
+    font-size: 0.72rem;
     fill: #475569;
   }
 
@@ -1018,7 +1018,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
 
   const baseWidth = container.clientWidth || 1000;
   const usableWidth = Math.max(360, baseWidth - margin.left - margin.right);
-  const cellSize = Math.max(14, Math.floor((usableWidth - gap * (cols - 1)) / cols));
+  const cellSize = Math.max(16, Math.floor((usableWidth - gap * (cols - 1)) / cols));
   const gridWidth = cols * cellSize + (cols - 1) * gap;
   const rows = dateKeys.length;
   const gridHeight = rows * cellSize + (rows - 1) * gap;

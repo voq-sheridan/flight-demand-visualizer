@@ -474,7 +474,7 @@ function buildUI() {
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';
-  depHeatmapTitle.textContent = 'Departures by Hour (All Available Dates, ET · Live)';
+  depHeatmapTitle.textContent = 'Departures by Hour';
 
   const depHeatmapContainer = document.createElement('div');
   depHeatmapContainer.className = 'heatmap-container';
@@ -487,7 +487,7 @@ function buildUI() {
 
   const arrHeatmapTitle = document.createElement('div');
   arrHeatmapTitle.className = 'heatmap-section-title';
-  arrHeatmapTitle.textContent = 'Arrivals by Hour (All Available Dates, ET · Live)';
+  arrHeatmapTitle.textContent = 'Arrivals by Hour';
 
   const arrHeatmapContainer = document.createElement('div');
   arrHeatmapContainer.className = 'heatmap-container';

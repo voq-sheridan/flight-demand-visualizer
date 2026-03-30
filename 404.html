@@ -19,14 +19,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.00f0eb68.json","lastModified":1774765404855,"size":1449525});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.4768fd9f.json","lastModified":1774845664815,"size":1499132});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "a03820a1", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","loadedDates","dataWarnings","availableDateKeys","currentDateKey","currentStatusFilter","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
+define({id: "33f2cf31", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","loadedDates","dataWarnings","availableDateKeys","currentDateKey","currentStatusFilter","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
 // Render live summary, busyness chart and auto-refresh (1 hour)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 let d3;
@@ -897,27 +897,30 @@ function applyNewData(srcData) {
 }
 
 async function fetchLatestFlightsData() {
-  // Prefer framework-resolved attachment URL (normally present in both preview and static builds).
+  // Use stable path first to avoid stale-hash 404s when users return after a redeploy.
+  const stableUrl = `./data/flights.json?_=${Date.now()}`;
+  const stableResp = await fetch(stableUrl, { cache: 'no-store' });
+  if (stableResp.ok) {
+    return await stableResp.json();
+  }
+  if (stableResp.status !== 404) {
+    throw new Error(`Refresh request failed with HTTP ${stableResp.status}`);
+  }
+
+  // Fallback for local preview/dev cases where stable path is absent.
   const attachmentUrl = await FileAttachment("./data/flights.json").url();
-  const primaryUrl = attachmentUrl.includes('?')
+  const attachmentFetchUrl = attachmentUrl.includes('?')
     ? `${attachmentUrl}&_=${Date.now()}`
     : `${attachmentUrl}?_=${Date.now()}`;
 
-  const primaryResp = await fetch(primaryUrl, { cache: 'no-store' });
-  if (primaryResp.ok) {
-    return await primaryResp.json();
-  }
-
-  // Secondary fallback: stable path copied by CI deploy hardening.
-  const stableUrl = `./data/flights.json?_=${Date.now()}`;
-  const stableResp = await fetch(stableUrl, { cache: 'no-store' });
-  if (stableResp.status === 404) {
+  const attachmentResp = await fetch(attachmentFetchUrl, { cache: 'no-store' });
+  if (attachmentResp.status === 404) {
     return null;
   }
-  if (!stableResp.ok) {
-    throw new Error(`Refresh request failed with HTTP ${stableResp.status}`);
+  if (!attachmentResp.ok) {
+    throw new Error(`Refresh request failed with HTTP ${attachmentResp.status}`);
   }
-  return await stableResp.json();
+  return await attachmentResp.json();
 }
 
 // initial render
@@ -1533,12 +1536,12 @@ Data sourced from AeroDataBox via RapidAPI.</p>
   }
 </style>
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
-<div class="observablehq observablehq--block"><!--:a03820a1:--></div>
+<div class="observablehq observablehq--block"><!--:33f2cf31:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
 <div class="observablehq observablehq--block"><!--:007afbce:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-29T06:23:14">Mar 29, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-30T04:40:53">Mar 30, 2026</a>.</div>
 </footer>
 </div>
 </body>

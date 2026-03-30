@@ -19,14 +19,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.813a2f7a.json","lastModified":1774849400829,"size":813048});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.aba58e59.json","lastModified":1774849679500,"size":812897});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "f75a8544", inputs: ["display","data","formatTime","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","heatmapLegend","tooltip","tableContainer","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","LOW_DEMAND_MAX_FLIGHTS","HIGH_DEMAND_MIN_FLIGHTS","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","buildHeatmapBands","currentHeatmapBands","updateHeatmapLegendFromBands","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","loadedDates","dataWarnings","availableDateKeys","currentDateKey","currentStatusFilter","currentTablePage","ROWS_PER_PAGE","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderTable","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler","onScrollHandler","backToTopBtn"], body: async (display,data,formatTime,FileAttachment,invalidation) => {
+define({id: "88a4b5c7", inputs: ["display","data","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","heatmapLegend","tooltip","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","LOW_DEMAND_MAX_FLIGHTS","HIGH_DEMAND_MIN_FLIGHTS","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","buildHeatmapBands","currentHeatmapBands","updateHeatmapLegendFromBands","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","loadedDates","dataWarnings","availableDateKeys","currentDateKey","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler","onScrollHandler","backToTopBtn"], body: async (display,data,FileAttachment,invalidation) => {
 // Render live summary, busyness chart and auto-refresh (1 hour)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 let d3;
@@ -164,10 +164,6 @@ function buildUI() {
 
   wrapper.appendChild(chartCard);
 
-  // Container for the flight table below the top row
-  const tableContainer = document.createElement('div');
-  tableContainer.style.marginTop = '1.25rem';
-
   return {
     wrapper,
     summaryPanel,
@@ -182,8 +178,7 @@ function buildUI() {
     arrHeatmapSvg,
     arrHeatmapContainer,
     heatmapLegend,
-    tooltip,
-    tableContainer
+    tooltip
   };
 }
 
@@ -212,12 +207,10 @@ const {
   arrHeatmapSvg,
   arrHeatmapContainer,
   heatmapLegend,
-  tooltip,
-  tableContainer
+  tooltip
 } = buildUI();
 
 display(wrapper);
-display(tableContainer);
 
 // Time helpers in Toronto timezone
 function torontoDateKey(date) {
@@ -778,9 +771,6 @@ let loadedDates = data?.dates || {};
 let dataWarnings = Array.isArray(data?.warnings) ? data.warnings : [];
 let availableDateKeys = [];
 let currentDateKey = null;
-let currentStatusFilter = 'all';
-let currentTablePage = 1;
-const ROWS_PER_PAGE = 25;
 
 let metaRow = null;
 let metaBaseSpan = null;
@@ -871,137 +861,6 @@ function updateSnapshotTotals(srcData) {
   snapshotTotals.textContent = `Snapshot totals (all loaded dates) — Total: ${total} · Departures: ${departures} · Arrivals: ${arrivals}${warningSuffix}`;
 }
 
-function renderTable(flightsForDate) {
-  tableContainer.innerHTML = '';
-  const filtered = flightsForDate.filter(f =>
-    currentStatusFilter === 'all' ? true : f.resolvedStatus === currentStatusFilter
-  );
-
-  const tableSection = document.createElement('div');
-  tableSection.className = 'table-section';
-
-  const controlsRow = document.createElement('div');
-  controlsRow.className = 'control-row';
-  const statusGroup = document.createElement('div');
-  statusGroup.className = 'control-group';
-  const statusLabelEl = document.createElement('label');
-  statusLabelEl.textContent = 'Status';
-  const statusSelect = document.createElement('select');
-  statusSelect.innerHTML = `
-    <option value="all">All</option>
-    <option value="active">Active</option>
-    <option value="delayed">Delayed</option>
-    <option value="landed">Landed</option>
-    <option value="cancelled">Cancelled</option>
-    <option value="scheduled">Scheduled</option>
-  `;
-  statusSelect.value = currentStatusFilter;
-  statusSelect.addEventListener('change', () => {
-    currentStatusFilter = statusSelect.value;
-    currentTablePage = 1;
-    renderForSelection();
-  });
-  statusGroup.appendChild(statusLabelEl);
-  statusGroup.appendChild(statusSelect);
-  controlsRow.appendChild(statusGroup);
-  tableSection.appendChild(controlsRow);
-
-  const totalFlights = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalFlights / ROWS_PER_PAGE));
-  currentTablePage = Math.min(Math.max(1, currentTablePage), totalPages);
-  const startIndex = totalFlights === 0 ? 0 : (currentTablePage - 1) * ROWS_PER_PAGE;
-  const endIndex = totalFlights === 0 ? 0 : Math.min(startIndex + ROWS_PER_PAGE, totalFlights);
-  const pageRows = filtered.slice(startIndex, endIndex);
-
-  const summary = document.createElement('div');
-  summary.className = 'table-summary';
-  summary.textContent = `Showing ${totalFlights === 0 ? 0 : startIndex + 1} to ${endIndex} of ${totalFlights} flights`;
-  tableSection.appendChild(summary);
-
-  if (totalFlights === 0) {
-    const box = document.createElement('div');
-    box.className = 'empty-box';
-    box.textContent = 'No flights found for this date and filters.';
-    tableSection.appendChild(box);
-    tableContainer.appendChild(tableSection);
-    return;
-  }
-
-  const tableScroll = document.createElement('div');
-  tableScroll.className = 'table-scroll';
-
-  const table = document.createElement('table');
-  table.className = 'flight-board';
-
-  const rows = pageRows.map((f) => {
-    const airport = f.otherAirportCode
-      ? `${f.otherAirport} (${f.otherAirportCode})`
-      : f.otherAirport;
-    const label = statusLabel(f.resolvedStatus, f.status, f.delay);
-    return `
-      <tr class="${rowClass(f.resolvedStatus)}">
-        <td><span class="badge badge-${f.type === 'departure' ? 'dep' : 'arr'}">${f.type === 'departure' ? 'DEP' : 'ARR'}</span></td>
-        <td><strong>${f.flightNumber}</strong></td>
-        <td>${f.airline}</td>
-        <td>${airport}</td>
-        <td>${formatTime(f.scheduledTime)}</td>
-        <td><span class="status-pill ${pillClass(f.resolvedStatus)}">${label}</span></td>
-      </tr>`;
-  }).join('');
-
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Flight</th>
-        <th>Airline</th>
-        <th>${'Origin / Destination'}</th>
-        <th>Scheduled (ET)</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>`;
-
-  tableScroll.appendChild(table);
-  tableSection.appendChild(tableScroll);
-
-  const pagination = document.createElement('div');
-  pagination.className = 'table-pagination';
-
-  const prevBtn = document.createElement('button');
-  prevBtn.type = 'button';
-  prevBtn.className = 'pagination-btn';
-  prevBtn.textContent = 'Previous';
-  prevBtn.disabled = currentTablePage <= 1;
-  prevBtn.addEventListener('click', () => {
-    if (currentTablePage <= 1) return;
-    currentTablePage -= 1;
-    renderForSelection();
-  });
-
-  const pageInfo = document.createElement('div');
-  pageInfo.className = 'pagination-info';
-  pageInfo.textContent = `Page ${currentTablePage} of ${totalPages}`;
-
-  const nextBtn = document.createElement('button');
-  nextBtn.type = 'button';
-  nextBtn.className = 'pagination-btn';
-  nextBtn.textContent = 'Next';
-  nextBtn.disabled = currentTablePage >= totalPages;
-  nextBtn.addEventListener('click', () => {
-    if (currentTablePage >= totalPages) return;
-    currentTablePage += 1;
-    renderForSelection();
-  });
-
-  pagination.appendChild(prevBtn);
-  pagination.appendChild(pageInfo);
-  pagination.appendChild(nextBtn);
-  tableSection.appendChild(pagination);
-
-  tableContainer.appendChild(tableSection);
-}
-
 function renderForSelection() {
   if (!currentDateKey) return;
   const flightsForDate = allFlights.filter(f => {
@@ -1049,7 +908,6 @@ function renderForSelection() {
   renderDepartureInsightBox(departureInsightBox, allFlights);
   renderArrivalInsightBox(arrivalInsightBox, allFlights);
 
-  renderTable(flightsForDate);
   updateMeta(flightsForDate.length, allFlights.length);
 }
 
@@ -1059,7 +917,6 @@ function applyNewData(srcData) {
   lastFetchedAtIso = srcData.fetchedAt || lastFetchedAtIso;
   loadedDates = srcData?.dates || loadedDates;
   dataWarnings = Array.isArray(srcData?.warnings) ? srcData.warnings : dataWarnings;
-  currentTablePage = 1;
   updateSnapshotTotals(srcData);
   recomputeDateOptions();
   renderForSelection();
@@ -1207,7 +1064,7 @@ if (typeof invalidation !== 'undefined') {
   });
 }
 
-return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,snapshotTotals,departureInsightBox,arrivalInsightBox,metrics,chartCard,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,heatmapLegend,tooltip,tableContainer,torontoDateKey,torontoHour,hourLabelFromIndex,torontoHourMinute,torontoMinutesNow,formatClock12,formatClockFromMinutes,LOW_DEMAND_MAX_FLIGHTS,HIGH_DEMAND_MIN_FLIGHTS,getPeakHourForToday,applyInsightState,renderDepartureInsightBox,renderArrivalInsightBox,buildBinsForDate,buildHeatmapBands,currentHeatmapBands,updateHeatmapLegendFromBands,heatmapColor,parseDateKey,shiftDateKey,getHeatmapDateKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,lastFetchedAtIso,loadedDates,dataWarnings,availableDateKeys,currentDateKey,currentStatusFilter,currentTablePage,ROWS_PER_PAGE,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,isPageActive,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,updateSnapshotTotals,renderTable,renderForSelection,applyNewData,fetchLatestFlightsData,runRefreshCycle,refreshTimer,onVisibilityChangeHandler,beforeUnloadHandler,onScrollHandler,backToTopBtn};
+return {d3,toLocalDate,buildUI,createMetricCard,wrapper,summaryPanel,snapshotTotals,departureInsightBox,arrivalInsightBox,metrics,chartCard,dateHeading,depHeatmapSvg,depHeatmapContainer,arrHeatmapSvg,arrHeatmapContainer,heatmapLegend,tooltip,torontoDateKey,torontoHour,hourLabelFromIndex,torontoHourMinute,torontoMinutesNow,formatClock12,formatClockFromMinutes,LOW_DEMAND_MAX_FLIGHTS,HIGH_DEMAND_MIN_FLIGHTS,getPeakHourForToday,applyInsightState,renderDepartureInsightBox,renderArrivalInsightBox,buildBinsForDate,buildHeatmapBands,currentHeatmapBands,updateHeatmapLegendFromBands,heatmapColor,parseDateKey,shiftDateKey,getHeatmapDateKeys,isYYZDeparture,isYYZArrival,buildDirectionalHeatmapData,drawDirectionalHeatmap,pillClass,rowClass,statusLabel,allFlights,fetchedAt,lastFetchedAtIso,loadedDates,dataWarnings,availableDateKeys,currentDateKey,metaRow,metaBaseSpan,countdownSpan,REFRESH_MS,nextRefreshAt,isPageActive,recomputeDateOptions,ensureMetaRow,updateMeta,updateCountdown,countdownTimer,updateSnapshotTotals,renderForSelection,applyNewData,fetchLatestFlightsData,runRefreshCycle,refreshTimer,onVisibilityChangeHandler,beforeUnloadHandler,onScrollHandler,backToTopBtn};
 }});
 
 define({id: "89e04ded", inputs: ["data","display"], body: (data,display) => {
@@ -1824,12 +1681,12 @@ Data sourced from AeroDataBox via RapidAPI.</p>
   }
 </style>
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
-<div class="observablehq observablehq--block"><!--:f75a8544:--></div>
+<div class="observablehq observablehq--block"><!--:88a4b5c7:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
 <div class="observablehq observablehq--block"><!--:007afbce:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-30T05:43:09">Mar 30, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-30T05:47:47">Mar 30, 2026</a>.</div>
 </footer>
 </div>
 </body>

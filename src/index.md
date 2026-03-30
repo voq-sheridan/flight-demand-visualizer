@@ -135,7 +135,7 @@ Data sourced from AeroDataBox via RapidAPI.
   }
 
   .heatmap-axis-label {
-    font-size: 0.84rem;
+    font-size: 0.95rem;
     fill: #475569;
   }
 

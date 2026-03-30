@@ -19,14 +19,14 @@
 import {define} from "./_observablehq/client.50a456f6.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.aba58e59.json","lastModified":1774849679500,"size":812897});
+registerFile("./data/flights.json", {"name":"./data/flights.json","mimeType":"application/json","path":"./_file/data/flights.3a8efe39.json","lastModified":1774849850622,"size":812980});
 
 define({id: "74213a70", inputs: ["FileAttachment"], outputs: ["data"], body: async (FileAttachment) => {
 const data = await FileAttachment("./data/flights.json").json();
 return {data};
 }});
 
-define({id: "88a4b5c7", inputs: ["display","data","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","heatmapLegend","tooltip","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","LOW_DEMAND_MAX_FLIGHTS","HIGH_DEMAND_MIN_FLIGHTS","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","buildHeatmapBands","currentHeatmapBands","updateHeatmapLegendFromBands","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","loadedDates","dataWarnings","availableDateKeys","currentDateKey","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler","onScrollHandler","backToTopBtn"], body: async (display,data,FileAttachment,invalidation) => {
+define({id: "2db2beed", inputs: ["display","data","FileAttachment","invalidation"], outputs: ["d3","toLocalDate","buildUI","createMetricCard","wrapper","summaryPanel","snapshotTotals","departureInsightBox","arrivalInsightBox","metrics","chartCard","dateHeading","depHeatmapSvg","depHeatmapContainer","arrHeatmapSvg","arrHeatmapContainer","heatmapLegend","tooltip","torontoDateKey","torontoHour","hourLabelFromIndex","torontoHourMinute","torontoMinutesNow","formatClock12","formatClockFromMinutes","LOW_DEMAND_MAX_FLIGHTS","HIGH_DEMAND_MIN_FLIGHTS","getPeakHourForToday","applyInsightState","renderDepartureInsightBox","renderArrivalInsightBox","buildBinsForDate","buildHeatmapBands","currentHeatmapBands","updateHeatmapLegendFromBands","heatmapColor","parseDateKey","shiftDateKey","getHeatmapDateKeys","isYYZDeparture","isYYZArrival","buildDirectionalHeatmapData","drawDirectionalHeatmap","pillClass","rowClass","statusLabel","allFlights","fetchedAt","lastFetchedAtIso","loadedDates","dataWarnings","availableDateKeys","currentDateKey","metaRow","metaBaseSpan","countdownSpan","REFRESH_MS","nextRefreshAt","isPageActive","recomputeDateOptions","ensureMetaRow","updateMeta","updateCountdown","countdownTimer","updateSnapshotTotals","renderForSelection","applyNewData","fetchLatestFlightsData","runRefreshCycle","refreshTimer","onVisibilityChangeHandler","beforeUnloadHandler","onScrollHandler","backToTopBtn"], body: async (display,data,FileAttachment,invalidation) => {
 // Render live summary, busyness chart and auto-refresh (1 hour)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 let d3;
@@ -92,7 +92,7 @@ function buildUI() {
 
   const depHeatmapTitle = document.createElement('div');
   depHeatmapTitle.className = 'heatmap-section-title';
-  depHeatmapTitle.textContent = 'Departures by Hour (All Available Dates, ET · Live)';
+  depHeatmapTitle.textContent = 'Departures by Hour';
 
   const depHeatmapContainer = document.createElement('div');
   depHeatmapContainer.className = 'heatmap-container';
@@ -105,7 +105,7 @@ function buildUI() {
 
   const arrHeatmapTitle = document.createElement('div');
   arrHeatmapTitle.className = 'heatmap-section-title';
-  arrHeatmapTitle.textContent = 'Arrivals by Hour (All Available Dates, ET · Live)';
+  arrHeatmapTitle.textContent = 'Arrivals by Hour';
 
   const arrHeatmapContainer = document.createElement('div');
   arrHeatmapContainer.className = 'heatmap-container';
@@ -1681,12 +1681,12 @@ Data sourced from AeroDataBox via RapidAPI.</p>
   }
 </style>
 <div class="observablehq observablehq--block"><!--:74213a70:--></div>
-<div class="observablehq observablehq--block"><!--:88a4b5c7:--></div>
+<div class="observablehq observablehq--block"><!--:2db2beed:--></div>
 <div class="observablehq observablehq--block"><!--:89e04ded:--></div>
 <div class="observablehq observablehq--block"><!--:007afbce:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-30T05:47:47">Mar 30, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-03-30T05:50:39">Mar 30, 2026</a>.</div>
 </footer>
 </div>
 </body>

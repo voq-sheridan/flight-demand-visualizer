@@ -1012,7 +1012,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   const { dateKeys, cells } = heatmapData;
   svg.selectAll('*').remove();
 
-  const margin = { top: 26, right: 10, bottom: 14, left: 112 };
+  const margin = { top: 26, right: 74, bottom: 14, left: 112 };
   const cols = 24;
   const gap = 3;
 
@@ -1040,6 +1040,13 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   const todayRowIndex = dateKeys.indexOf(todayKey);
 
   const rowIndexByKey = new Map(dateKeys.map((d, i) => [d, i]));
+  const totalsByDate = new Map(
+    dateKeys.map((dateKey) => [
+      dateKey,
+      d3.sum(cells.filter((c) => c.dateKey === dateKey), (c) => c.total)
+    ])
+  );
+  const totalColX = margin.left + cols * (cellSize + gap);
 
   g
     .selectAll('.heatmap-hour-label')
@@ -1050,6 +1057,15 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('y', margin.top - 8)
     .attr('text-anchor', 'middle')
     .text((d) => String(d).padStart(2, '0'));
+
+  g
+    .append('text')
+    .attr('class', 'heatmap-axis-label heatmap-total-label')
+    .attr('x', totalColX + cellSize / 2)
+    .attr('y', margin.top - 8)
+    .attr('text-anchor', 'middle')
+    .style('font-weight', '700')
+    .text('Total');
 
   g
     .selectAll('.heatmap-date-label')
@@ -1125,6 +1141,33 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .on('mouseleave', () => {
       tooltipSel.classed('hidden', true);
     });
+
+  g
+    .selectAll('.heatmap-total-bg')
+    .data(dateKeys)
+    .join('rect')
+    .attr('class', 'heatmap-total-bg')
+    .attr('x', totalColX)
+    .attr('y', (d) => margin.top + rowIndexByKey.get(d) * (cellSize + gap))
+    .attr('width', cellSize)
+    .attr('height', cellSize)
+    .attr('rx', 4)
+    .attr('ry', 4)
+    .attr('fill', '#eef2ff')
+    .attr('stroke', '#cbd5e1')
+    .attr('stroke-width', 0.8);
+
+  g
+    .selectAll('.heatmap-total-value')
+    .data(dateKeys)
+    .join('text')
+    .attr('class', 'heatmap-axis-label heatmap-total-value')
+    .attr('x', totalColX + cellSize / 2)
+    .attr('y', (d) => margin.top + rowIndexByKey.get(d) * (cellSize + gap) + cellSize / 2 + 4)
+    .attr('text-anchor', 'middle')
+    .style('font-weight', '700')
+    .style('font-size', '0.72rem')
+    .text((d) => totalsByDate.get(d) ?? 0);
 }
 
 function pillClass(resolvedStatus) {

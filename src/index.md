@@ -563,6 +563,7 @@ function buildUI() {
     depHeatmapContainer,
     arrHeatmapSvg,
     arrHeatmapContainer,
+    heatmapLegend,
     tooltip,
     tableContainer
   };
@@ -592,6 +593,7 @@ const {
   depHeatmapContainer,
   arrHeatmapSvg,
   arrHeatmapContainer,
+  heatmapLegend,
   tooltip,
   tableContainer
 } = buildUI();
@@ -871,10 +873,62 @@ function buildBinsForDate(flights, dateKey) {
   return bins;
 }
 
+function buildHeatmapBands(peakMax) {
+  const peak = Math.max(1, Number(peakMax) || 1);
+  let q1 = Math.ceil(peak * 0.25);
+  let q2 = Math.ceil(peak * 0.5);
+  let q3 = Math.ceil(peak * 0.75);
+
+  q1 = Math.max(1, q1);
+  q2 = Math.max(q1 + 1, q2);
+  q3 = Math.max(q2 + 1, q3);
+
+  return {
+    domain: [1, q1 + 1, q2 + 1, q3 + 1],
+    lowMax: q1,
+    moderateMin: q1 + 1,
+    moderateMax: q2,
+    busyMin: q2 + 1,
+    busyMax: q3,
+    peakMin: q3 + 1
+  };
+}
+
+let currentHeatmapBands = buildHeatmapBands(81);
+
+function updateHeatmapLegendFromBands(legendEl, bands) {
+  legendEl.innerHTML = `
+    <span class="heatmap-legend-item">
+      <span class="heatmap-swatch" style="background:#f5f5f5" title="Quiet / 0 flights"></span>
+      <span class="heatmap-legend-name">Quiet</span>
+      <span class="heatmap-legend-range">0 flights</span>
+    </span>
+    <span class="heatmap-legend-item">
+      <span class="heatmap-swatch" style="background:#fee5d9" title="Low / 1–${bands.lowMax} flights"></span>
+      <span class="heatmap-legend-name">Low</span>
+      <span class="heatmap-legend-range">1–${bands.lowMax} flights</span>
+    </span>
+    <span class="heatmap-legend-item">
+      <span class="heatmap-swatch" style="background:#fcae91" title="Moderate / ${bands.moderateMin}–${bands.moderateMax} flights"></span>
+      <span class="heatmap-legend-name">Moderate</span>
+      <span class="heatmap-legend-range">${bands.moderateMin}–${bands.moderateMax} flights</span>
+    </span>
+    <span class="heatmap-legend-item">
+      <span class="heatmap-swatch" style="background:#fb6a4a" title="Busy / ${bands.busyMin}–${bands.busyMax} flights"></span>
+      <span class="heatmap-legend-name">Busy</span>
+      <span class="heatmap-legend-range">${bands.busyMin}–${bands.busyMax} flights</span>
+    </span>
+    <span class="heatmap-legend-item">
+      <span class="heatmap-swatch" style="background:#cb181d" title="Peak / ${bands.peakMin}+ flights"></span>
+      <span class="heatmap-legend-name">Peak</span>
+      <span class="heatmap-legend-range">${bands.peakMin}+ flights</span>
+    </span>`;
+}
+
 function heatmapColor(total) {
   const heatmapColorScale = d3
     .scaleThreshold()
-    .domain([1, 21, 51, 81])
+    .domain(currentHeatmapBands.domain)
     .range(['#f5f5f5', '#fee5d9', '#fcae91', '#fb6a4a', '#cb181d']);
   return heatmapColorScale(total);
 }
@@ -1351,6 +1405,8 @@ function renderForSelection() {
   const depHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'departures');
   const arrHeatmapData = buildDirectionalHeatmapData(allFlights, heatmapDateKeys, 'arrivals');
   const sharedMax = Math.max(depHeatmapData.maxTotal, arrHeatmapData.maxTotal);
+  currentHeatmapBands = buildHeatmapBands(sharedMax);
+  updateHeatmapLegendFromBands(heatmapLegend, currentHeatmapBands);
 
   drawDirectionalHeatmap(depHeatmapSvg, depHeatmapContainer, depHeatmapData, sharedMax);
   drawDirectionalHeatmap(arrHeatmapSvg, arrHeatmapContainer, arrHeatmapData, sharedMax);

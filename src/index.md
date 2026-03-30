@@ -1270,6 +1270,28 @@ function updateCountdown() {
 
 const countdownTimer = setInterval(updateCountdown, 1000);
 
+function updateDateHeadingClock() {
+  if (!currentDateKey) return;
+  const d = parseDateKey(currentDateKey);
+  const dateText = d.toLocaleDateString('en-CA', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+  const currentTimeEt = new Date().toLocaleTimeString('en-CA', {
+    timeZone: 'America/Toronto',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  dateHeading.textContent = `${dateText} · ${currentTimeEt} ET`;
+}
+
+const dateHeadingTimer = setInterval(updateDateHeadingClock, 1000);
+
 function updateSnapshotTotals(srcData) {
   const flights = Array.isArray(srcData?.flights) ? srcData.flights : [];
   const total = flights.length;
@@ -1315,22 +1337,8 @@ function renderForSelection() {
   drawDirectionalHeatmap(depHeatmapSvg, depHeatmapContainer, depHeatmapData, sharedMax);
   drawDirectionalHeatmap(arrHeatmapSvg, arrHeatmapContainer, arrHeatmapData, sharedMax);
 
-  // selected date heading + current Toronto time
-  const d = parseDateKey(currentDateKey);
-  const dateText = d.toLocaleDateString('en-CA', {
-    timeZone: 'UTC',
-    weekday: 'long',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-  const currentTimeEt = new Date().toLocaleTimeString('en-CA', {
-    timeZone: 'America/Toronto',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  });
-  dateHeading.textContent = `${dateText} · ${currentTimeEt} ET`;
+  // selected date heading + continuously updated current Toronto time
+  updateDateHeadingClock();
 
   renderDepartureInsightBox(departureInsightBox, allFlights);
   renderArrivalInsightBox(arrivalInsightBox, allFlights);
@@ -1487,6 +1495,7 @@ if (typeof window !== 'undefined') {
   beforeUnloadHandler = () => {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
+    clearInterval(dateHeadingTimer);
     if (onScrollHandler) {
       window.removeEventListener('scroll', onScrollHandler);
     }
@@ -1511,6 +1520,7 @@ if (typeof invalidation !== 'undefined') {
   invalidation.then(() => {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
+    clearInterval(dateHeadingTimer);
     if (typeof window !== 'undefined') {
       if (onScrollHandler) {
         window.removeEventListener('scroll', onScrollHandler);

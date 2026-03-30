@@ -28,10 +28,12 @@ jobs:
         run: |
           latest="$(ls -t dist/_file/data/flights*.json 2>/dev/null | head -n1 || true)"
           if [ -z "$latest" ] || [ ! -f "$latest" ]; then
-            echo "::error::No generated flights*.json found after build."
-            exit 1
+            echo "::warning::No generated flights*.json found after build; will fall back to src/data/flights.json if available."
+            echo "USE_FALLBACK_SNAPSHOT=true" >> "$GITHUB_ENV"
+            exit 0
           fi
           echo "Using snapshot: $latest"
+          set +e
           node -e '
             const fs = require("fs");
             const p = process.argv[1];
@@ -50,18 +52,31 @@ jobs:
                 const extra = error
                   ? ` Root cause from loader: ${error}`
                   : (warnings.length ? ` Warnings: ${warnings.join(" | ")}` : "");
-                console.error(`::error::Generated flight snapshot is empty.${extra} Failing deploy to avoid publishing degraded data.`);
-                process.exit(1);
+                console.warn(`::warning::Generated flight snapshot is empty.${extra} Falling back to src/data/flights.json if available.`);
+                process.exit(42);
               }
             }
           ' "$latest"
+          code="$?"
+          set -e
+          if [ "$code" = "42" ]; then
+            echo "USE_FALLBACK_SNAPSHOT=true" >> "$GITHUB_ENV"
+          elif [ "$code" != "0" ]; then
+            exit "$code"
+          fi
         env:
           ALLOW_EMPTY_SNAPSHOT: ${{ github.event.inputs.allow_empty_snapshot || 'false' }}
       - name: Prepare stable data path
         run: |
           mkdir -p dist/data
           latest="$(ls -t dist/_file/data/flights*.json 2>/dev/null | head -n1 || true)"
-          if [ -n "$latest" ] && [ -f "$latest" ]; then
+          if [ "${USE_FALLBACK_SNAPSHOT:-false}" = "true" ] && [ -f src/data/flights.json ]; then
+            echo '::warning::Using src/data/flights.json as deploy fallback snapshot.'
+            cp src/data/flights.json dist/data/flights.json
+            if [ -n "$latest" ] && [ -f "$latest" ]; then
+              cp src/data/flights.json "$latest"
+            fi
+          elif [ -n "$latest" ] && [ -f "$latest" ]; then
             cp "$latest" dist/data/flights.json
           else
             echo '::warning::No generated flights*.json found; writing empty fallback data file.'

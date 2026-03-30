@@ -135,7 +135,7 @@ Data sourced from AeroDataBox via RapidAPI.
   }
 
   .heatmap-axis-label {
-    font-size: 0.72rem;
+    font-size: 0.84rem;
     fill: #475569;
   }
 
@@ -1012,13 +1012,13 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   const { dateKeys, cells } = heatmapData;
   svg.selectAll('*').remove();
 
-  const margin = { top: 26, right: 74, bottom: 14, left: 112 };
+  const margin = { top: 28, right: 122, bottom: 14, left: 112 };
   const cols = 24;
   const gap = 3;
 
   const baseWidth = container.clientWidth || 1000;
   const usableWidth = Math.max(360, baseWidth - margin.left - margin.right);
-  const cellSize = Math.max(10, Math.floor((usableWidth - gap * (cols - 1)) / cols));
+  const cellSize = Math.max(14, Math.floor((usableWidth - gap * (cols - 1)) / cols));
   const gridWidth = cols * cellSize + (cols - 1) * gap;
   const rows = dateKeys.length;
   const gridHeight = rows * cellSize + (rows - 1) * gap;
@@ -1041,6 +1041,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
 
   const rowIndexByKey = new Map(dateKeys.map((d, i) => [d, i]));
   const totalColumnGap = 20;
+  const totalColumnWidth = Math.max(cellSize + 10, Math.round(cellSize * 1.25));
   const totalsByDate = new Map(
     dateKeys.map((dateKey) => [
       dateKey,
@@ -1062,7 +1063,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
   g
     .append('text')
     .attr('class', 'heatmap-axis-label heatmap-total-label')
-    .attr('x', totalColX + cellSize / 2)
+    .attr('x', totalColX + totalColumnWidth / 2)
     .attr('y', margin.top - 8)
     .attr('text-anchor', 'middle')
     .style('font-weight', '700')
@@ -1077,7 +1078,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('y', (_, i) => margin.top + i * (cellSize + gap) + cellSize / 2 + 4)
     .attr('text-anchor', 'end')
     .style('font-weight', (d) => (d === todayKey ? '700' : '400'))
-    .style('font-size', (d) => (d === todayKey ? '1rem' : '0.72rem'))
+  .style('font-size', (d) => (d === todayKey ? '1.08rem' : '0.86rem'))
     .text((d) => {
       const dateObj = parseDateKey(d);
       return dateObj.toLocaleDateString('en-CA', {
@@ -1150,7 +1151,7 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .attr('class', 'heatmap-total-bg')
     .attr('x', totalColX)
     .attr('y', (d) => margin.top + rowIndexByKey.get(d) * (cellSize + gap))
-    .attr('width', cellSize)
+  .attr('width', totalColumnWidth)
     .attr('height', cellSize)
     .attr('rx', 4)
     .attr('ry', 4)
@@ -1163,11 +1164,11 @@ function drawDirectionalHeatmap(svg, container, heatmapData, sharedMax) {
     .data(dateKeys)
     .join('text')
     .attr('class', 'heatmap-axis-label heatmap-total-value')
-    .attr('x', totalColX + cellSize / 2)
+    .attr('x', totalColX + totalColumnWidth / 2)
     .attr('y', (d) => margin.top + rowIndexByKey.get(d) * (cellSize + gap) + cellSize / 2 + 4)
     .attr('text-anchor', 'middle')
     .style('font-weight', '700')
-    .style('font-size', '0.72rem')
+    .style('font-size', '0.88rem')
     .text((d) => totalsByDate.get(d) ?? 0);
 }
 

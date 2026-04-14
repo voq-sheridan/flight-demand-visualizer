@@ -135,58 +135,6 @@ function isFutureDate(targetDate) {
   return target.getTime() > today.getTime();
 }
 
-function buildDemoFlights(dateText) {
-  const routes = [
-    { airline: "Air Canada", airport: "Vancouver International", code: "YVR" },
-    { airline: "WestJet", airport: "Calgary International", code: "YYC" },
-    { airline: "Porter Airlines", airport: "Ottawa International", code: "YOW" },
-    { airline: "Delta Air Lines", airport: "John F. Kennedy International", code: "JFK" },
-    { airline: "United Airlines", airport: "Chicago O'Hare International", code: "ORD" },
-    { airline: "American Airlines", airport: "Dallas/Fort Worth International", code: "DFW" }
-  ];
-
-  const departures = [];
-  const arrivals = [];
-  const depHours = [6, 8, 10, 12, 14, 16, 18, 20, 22];
-  const arrHours = [7, 9, 11, 13, 15, 17, 19, 21, 23];
-
-  depHours.forEach((hour, idx) => {
-    const route = routes[idx % routes.length];
-    departures.push({
-      type: "departure",
-      flightNumber: `${route.airline.split(" ")[0].slice(0, 2).toUpperCase()}${600 + idx}`,
-      airline: route.airline,
-      otherAirport: route.airport,
-      otherAirportCode: route.code,
-      departureIata: "YYZ",
-      arrivalIata: route.code,
-      scheduledTime: `${dateText}T${String(hour).padStart(2, "0")}:00:00Z`,
-      status: hour >= 18 ? "scheduled" : "active",
-      resolvedStatus: hour >= 18 ? "scheduled" : "active",
-      date: dateText
-    });
-  });
-
-  arrHours.forEach((hour, idx) => {
-    const route = routes[(idx + 2) % routes.length];
-    arrivals.push({
-      type: "arrival",
-      flightNumber: `${route.airline.split(" ")[0].slice(0, 2).toUpperCase()}${700 + idx}`,
-      airline: route.airline,
-      otherAirport: route.airport,
-      otherAirportCode: route.code,
-      departureIata: route.code,
-      arrivalIata: "YYZ",
-      scheduledTime: `${dateText}T${String(hour).padStart(2, "0")}:30:00Z`,
-      status: hour <= 12 ? "landed" : hour <= 18 ? "active" : "scheduled",
-      resolvedStatus: hour <= 12 ? "landed" : hour <= 18 ? "active" : "scheduled",
-      date: dateText
-    });
-  });
-
-  return [...departures, ...arrivals];
-}
-
 async function fetchFlightsForDate(targetDate) {
   const dateText = formatDate(targetDate);
   const headers = buildHeaders();
@@ -342,24 +290,8 @@ if (!AERODATABOX_API_KEY) {
     (a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime)
   );
 
-  const totalDepartures = flights.filter((f) => f.type === "departure").length;
-  const totalArrivals = flights.filter((f) => f.type === "arrival").length;
-
   let error = null;
-  let usedFallbackDemoData = false;
   if (flights.length === 0) {
-    const isRateLimitedSnapshot = warnings.length > 0 && warnings.every((w) => String(w).includes("HTTP 429"));
-
-    if (isRateLimitedSnapshot || warnings.length === 0) {
-      flights = [
-        ...buildDemoFlights(dates.yesterday),
-        ...buildDemoFlights(dates.today),
-        ...buildDemoFlights(dates.tomorrow)
-      ].sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
-      usedFallbackDemoData = true;
-      warnings.push("Live API data unavailable; using built-in demo snapshot fallback.");
-    }
-
     if (warnings.length > 0 && warnings.every((w) => String(w).includes("HTTP 429"))) {
       error = "All AeroDataBox requests were rate-limited (HTTP 429).";
     } else if (warnings.length > 0) {
@@ -367,10 +299,6 @@ if (!AERODATABOX_API_KEY) {
     } else {
       error = "API returned an empty flight snapshot for this build window.";
     }
-  }
-
-  if (usedFallbackDemoData) {
-    error = null;
   }
 
   const finalTotalDepartures = flights.filter((f) => f.type === "departure").length;
@@ -384,7 +312,7 @@ if (!AERODATABOX_API_KEY) {
       warnings,
       totalDepartures: finalTotalDepartures,
       totalArrivals: finalTotalArrivals,
-      source: usedFallbackDemoData ? "demo-fallback" : "live-api",
+      source: "live-api",
       ...(error ? { error } : {})
     })
   );

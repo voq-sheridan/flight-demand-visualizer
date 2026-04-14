@@ -409,7 +409,7 @@ const data = await FileAttachment("./data/flights.json").json();
 ```
 
 ```js
-// Render live summary, busyness chart and auto-refresh (6 hours)
+// Render live summary, busyness chart and auto-refresh (1 hour)
 // Use Observable Framework's npm import syntax so D3 is bundled correctly.
 let d3;
 try {
@@ -1203,7 +1203,7 @@ let metaRow = null;
 let metaBaseSpan = null;
 let countdownSpan = null;
 
-const REFRESH_MS = 6 * 60 * 60 * 1000;
+const REFRESH_MS = 1 * 60 * 60 * 1000;
 let nextRefreshAt = Date.now() + REFRESH_MS;
 let isPageActive = typeof document === 'undefined' ? true : document.visibilityState === 'visible';
 
@@ -1247,7 +1247,7 @@ function updateMeta(selectedDateCount, totalLoadedCount) {
     timeZone: 'America/Toronto',
     dateStyle: 'medium',
     timeStyle: 'short',
-  })} ET  ·  ${selectedDateCount} flight${selectedDateCount !== 1 ? 's' : ''} on selected date · ${totalLoadedCount} total loaded · Auto-refresh every 6 hours`;
+  })} ET  ·  ${selectedDateCount} flight${selectedDateCount !== 1 ? 's' : ''} on selected date · ${totalLoadedCount} total loaded · Auto-refresh every 1 hour`;
   metaBaseSpan.textContent = baseText;
 }
 
@@ -1438,7 +1438,7 @@ async function runRefreshCycle() {
   }
 }
 
-// Auto-refresh every 6 hours when page is active.
+// Auto-refresh every 1 hour when page is active.
 const refreshTimer = setInterval(() => {
   void runRefreshCycle();
 }, REFRESH_MS);

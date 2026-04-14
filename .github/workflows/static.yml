@@ -72,17 +72,28 @@ jobs:
         run: |
           mkdir -p dist/data
           latest="$(ls -t dist/_file/data/flights*.json 2>/dev/null | head -n1 || true)"
-          if [ "${USE_FALLBACK_SNAPSHOT:-false}" = "true" ] && [ -f src/data/flights.json ]; then
-            echo '::warning::Using src/data/flights.json as deploy fallback snapshot.'
-            cp src/data/flights.json dist/data/flights.json
-            if [ -n "$latest" ] && [ -f "$latest" ]; then
-              cp src/data/flights.json "$latest"
+          site_data_url="https://voq-sheridan.github.io/flight-demand-visualizer/data/flights.json"
+          if [ "${USE_FALLBACK_SNAPSHOT:-false}" = "true" ]; then
+            if curl -fsSL "$site_data_url" -o dist/data/flights.json; then
+              echo '::warning::Using previously published data/flights.json fallback from GitHub Pages.'
+              if [ -n "$latest" ] && [ -f "$latest" ]; then
+                cp dist/data/flights.json "$latest"
+              fi
+            elif [ -f src/data/flights.json ]; then
+              echo '::warning::Using src/data/flights.json as local fallback snapshot.'
+              cp src/data/flights.json dist/data/flights.json
+              if [ -n "$latest" ] && [ -f "$latest" ]; then
+                cp src/data/flights.json "$latest"
+              fi
+            else
+              echo '::warning::Could not fetch previous snapshot and local fallback file is missing.'
+              printf '{"flights":[],"fetchedAt":"%s","totalDepartures":0,"totalArrivals":0,"warnings":["No generated snapshot and no fallback snapshot available"],"error":"No generated snapshot and no fallback snapshot available"}' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/data/flights.json
             fi
           elif [ -n "$latest" ] && [ -f "$latest" ]; then
             cp "$latest" dist/data/flights.json
           else
             echo '::warning::No generated flights*.json found; writing empty fallback data file.'
-            printf '{"flights":[],"fetchedAt":"%s","totalDepartures":0,"totalArrivals":0}' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/data/flights.json
+            printf '{"flights":[],"fetchedAt":"%s","totalDepartures":0,"totalArrivals":0,"warnings":["No generated snapshot found during deploy"],"error":"No generated snapshot found during deploy"}' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/data/flights.json
           fi
       - run: cp src/favicon.svg dist/favicon.svg
       - run: cp src/favicon.svg dist/favicon.ico

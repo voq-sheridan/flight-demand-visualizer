@@ -62,7 +62,13 @@ function parseRetryAfterMs(value) {
   return Math.max(0, dt.getTime() - Date.now());
 }
 
-async function fetchJsonWithRetry(url, headers, maxAttempts = 3) {
+function asStatusError(status, message = `HTTP ${status}`) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+async function fetchJsonWithRetry(url, headers, maxAttempts = 2) {
   let lastError = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -76,10 +82,22 @@ async function fetchJsonWithRetry(url, headers, maxAttempts = 3) {
       const retryable = status === 429 || status >= 500;
       const retryAfterMs = parseRetryAfterMs(res.headers.get("retry-after"));
 
+      if (status === 429) {
+        const retryAfterMs = parseRetryAfterMs(res.headers.get("retry-after"));
+        const waitMs = retryAfterMs ?? 10000;
+
+        if (attempt === maxAttempts) {
+          const error = asStatusError(429, `HTTP 429`);
+          error.retryAfterMs = waitMs;
+          throw error;
+        }
+
+        await sleep(waitMs + Math.floor(Math.random() * 200));
+        continue;
+      }
+
       if (!retryable || attempt === maxAttempts) {
-        const error = new Error(`HTTP ${status}`);
-        error.status = status;
-        throw error;
+        throw asStatusError(status);
       }
 
       const backoffMs = retryAfterMs ?? Math.min(8000, 700 * 2 ** (attempt - 1));
@@ -104,7 +122,6 @@ const DAY_WINDOWS = [
 function buildDateTimeCandidates(dateText, fromHHMM, toHHMM) {
   return [
     { from: `${dateText}T${fromHHMM}`, to: `${dateText}T${toHHMM}` },
-    { from: `${dateText}T${fromHHMM}:00`, to: `${dateText}T${toHHMM}:59` },
     { from: `${dateText}T${fromHHMM}:00Z`, to: `${dateText}T${toHHMM}:59Z` }
   ];
 }
@@ -123,6 +140,7 @@ async function fetchFlightsForDate(targetDate) {
   const departures = [];
   const arrivals = [];
   const windowErrors = [];
+  let rateLimited = false;
 
   for (const window of DAY_WINDOWS) {
     const candidates = buildDateTimeCandidates(dateText, window.from, window.to);
@@ -136,11 +154,18 @@ async function fetchFlightsForDate(targetDate) {
         break;
       } catch (err) {
         lastWindowError = err;
+        if (err?.status === 429) {
+          rateLimited = true;
+          break;
+        }
       }
     }
 
     if (!windowJson) {
       windowErrors.push(lastWindowError || new Error("No valid response"));
+      if (rateLimited) {
+        break;
+      }
       continue;
     }
 
@@ -196,6 +221,17 @@ async function fetchFlightsForDate(targetDate) {
 
     return { flights: [...dedupedDepartures, ...dedupedArrivals], error: null };
   } catch (err) {
+    if (err?.status === 429) {
+      const retryAfterSec = Number.isFinite(err?.retryAfterMs)
+        ? Math.max(1, Math.ceil(err.retryAfterMs / 1000))
+        : null;
+      const msg = retryAfterSec
+        ? `Failed for ${dateText}: HTTP 429 (rate limited, retry after ~${retryAfterSec}s)`
+        : `Failed for ${dateText}: HTTP 429`;
+      process.stderr.write(`AeroDataBox rate limit for ${dateText}: ${msg}\n`);
+      return { flights: [], error: msg };
+    }
+
     if (err?.status === 400 && isFutureDate(targetDate)) {
       const msg = `No schedule returned for ${dateText} (future day may not be available on current API plan)`;
       process.stderr.write(`AeroDataBox request skipped for ${dateText}: ${msg}\n`);
@@ -242,12 +278,29 @@ if (!AERODATABOX_API_KEY) {
     (a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime)
   );
 
+  const totalDepartures = flights.filter((f) => f.type === "departure").length;
+  const totalArrivals = flights.filter((f) => f.type === "arrival").length;
+
+  let error = null;
+  if (flights.length === 0) {
+    if (warnings.length > 0 && warnings.every((w) => String(w).includes("HTTP 429"))) {
+      error = "All AeroDataBox requests were rate-limited (HTTP 429).";
+    } else if (warnings.length > 0) {
+      error = "No flights available from API for current build window.";
+    } else {
+      error = "API returned an empty flight snapshot for this build window.";
+    }
+  }
+
   process.stdout.write(
     JSON.stringify({
       flights,
       fetchedAt: new Date().toISOString(),
       dates,
-      warnings
+      warnings,
+      totalDepartures,
+      totalArrivals,
+      ...(error ? { error } : {})
     })
   );
 }

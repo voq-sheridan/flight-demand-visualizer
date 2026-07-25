@@ -1,0 +1,1 @@
+{"flights":[],"fetchedAt":"2026-07-25T06:23:55.428Z","dates":{"yesterday":"2026-07-24","today":"2026-07-25","tomorrow":"2026-07-26"},"warnings":["Failed for 2026-07-25: HTTP 403","Failed for 2026-07-26: HTTP 403"],"totalDepartures":0,"totalArrivals":0,"source":"live-api","error":"No flights available from API for current build window."}
